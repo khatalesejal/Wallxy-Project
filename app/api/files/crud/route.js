@@ -100,7 +100,7 @@ export async function DELETE(req) {
 
     await connectToDB();
     const file = await FileModel.findById(fileId);
-    if (!file) return NextResponse.json({ error: "File not found" }, { status: 404 });
+    if (!file) return NextResponse.json({ error: " uploadFile not found" }, { status: 404 });
 
     if (file.owner.toString() !== user._id.toString()) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
