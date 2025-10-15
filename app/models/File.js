@@ -1,15 +1,17 @@
-// app/models/File.js
+//app/models/File.js
 import mongoose from "mongoose";
 
 const FileSchema = new mongoose.Schema({
-  filename: { type: String, required: true }, // saved filename on disk
-  originalName: { type: String, required: true },
+   catalogName: { type: String, required: true },
+    description: { type: String },
+    fileUrl: { type: String, required: true },
+  filename: { type: String, required: true },
   owner: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
   size: { type: Number },
   mimetype: { type: String },
   tags: { type: [String], default: [] },
   catalog: { type: Boolean, default: false },
-  sharedWith: { type: [String], default: [] }, // emails
+  sharedWith: { type: [String], default: [] },
   createdAt: { type: Date, default: Date.now }
 });
 
