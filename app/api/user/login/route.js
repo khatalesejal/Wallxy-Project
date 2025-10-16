@@ -1,5 +1,5 @@
 // app/api/user/login/route.js
-import connectToDB from "../../../util/db.js";
+import { connectToDB } from '../../../util/db.js';
 import User from "../../../models/User.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";

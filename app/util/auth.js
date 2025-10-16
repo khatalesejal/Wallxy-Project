@@ -1,6 +1,6 @@
 // app/util/auth.js
 import jwt from "jsonwebtoken";
-import connectToDB from "./db.js";
+import { connectToDB } from './db.js'; 
 import User from "../models/User.js";
 
 const JWT_SECRET = process.env.JWT_SECRET || "secret";
@@ -21,3 +21,5 @@ export async function getUserFromRequest(req) {
     return null;
   }
 }
+
+

@@ -1,6 +1,6 @@
 // app/api/files/upload/route.js
 import { NextResponse } from "next/server";
-import connectToDB from "../../../util/db.js";
+import { connectToDB } from '../../../util/db.js';
 import { getUserFromRequest } from "../../../util/auth.js";
 import FileModel from "../../../models/File.js";
 import fs from "fs";

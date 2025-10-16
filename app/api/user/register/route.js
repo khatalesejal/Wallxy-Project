@@ -1,9 +1,8 @@
 // app/api/user/register/route.js
-import connectToDB from "../../../util/db.js";
+import { connectToDB } from '../../../util/db.js';
 import User from "../../../models/User.js";
 import bcrypt from "bcryptjs";
 import { NextResponse } from "next/server";
-
 export async function POST(req) {
   try {
     const body = await req.json();
