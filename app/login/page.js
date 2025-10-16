@@ -1,31 +1,110 @@
+'use client';
 
-import dbConnect from "../../../util/db";
-//import User from "../../../models/User";
-import bcrypt from "bcryptjs";
-//import { signToken } from "../../../lib/auth";
+import { useState } from 'react';
+import Link from 'next/link';
 
-export default async function handler(req, res) {
-  if (req.method !== "POST") return res.status(405).end();
+export default function LoginPage() {
+  const [formData, setFormData] = useState({
+    email: '',
+    password: ''
+  });
 
-  const { email, password } = req.body || {};
-  if (!email || !password) return res.status(400).json({ error: "Missing fields" });
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
 
-  await dbConnect();
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    console.log('Login:', formData);
+    // Add your login logic here
+  };
 
-  try {
-    const user = await User.findOne({ email });
-    if (!user) return res.status(401).json({ error: "Invalid credentials" });
+  return (
+    <div className="min-h-screen flex flex-col md:flex-row">
+      {/* Left side */}
+      <div className="hidden md:flex w-full md:w-1/2 bg-gradient-to-br from-blue-500 to-indigo-600 text-white items-center justify-center p-12">
+        <div className="max-w-md">
+          <h2 className="text-4xl font-bold mb-4">Welcome Back 👋</h2>
+          <p className="text-lg text-blue-100">
+            Sign in to your account and manage your catalogs with ease.
+          </p>
+          {/* <img
+            src="https://undraw.co/api/illustrations/1df32a1a-63f3-4957-9a29-84a9aa185da2" // You can replace this with any valid illustration
+            alt="Illustration"
+            className="mt-8 w-full max-w-sm"
+          /> */}
+        </div>
+      </div>
 
-    const ok = bcrypt.compareSync(password, user.passwordHash);
-    if (!ok) return res.status(401).json({ error: "Invalid credentials" });
+      {/* Right side - Login form */}
+      <div className="w-full md:w-1/2 flex items-center justify-center bg-gray-50 p-8">
+        <div className="w-full max-w-md bg-white rounded-xl shadow-lg p-8">
+          <div className="text-center mb-8">
+            <h1 className="text-3xl font-bold text-gray-800 mb-2">Sign In</h1>
+            <p className="text-gray-600">Welcome back! Please login to your account.</p>
+          </div>
 
-    const token = signToken({ id: user._id, email: user.email });
-    return res.status(200).json({
-      token,
-      user: { id: user._id, username: user.username, email: user.email }
-    });
-  } catch (err) {
-    console.error(err);
-    return res.status(500).json({ error: "Server error" });
-  }
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div>
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                Email Address
+              </label>
+              <input
+                type="email"
+                id="email"
+                name="email"
+                value={formData.email}
+                placeholder="Enter your email"
+                onChange={handleChange}
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition outline-none"
+                
+              />
+            </div>
+
+            <div>
+              <div className="flex justify-between items-center mb-1">
+                <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+                  Password
+                </label>
+                {/* <Link href="/forgot-password" className="text-sm text-blue-600 hover:underline">
+                  Forgot password?
+                </Link> */}
+              </div>
+              <input
+                type="password"
+                id="password"
+                name="password"
+                value={formData.password}
+                placeholder="Enter your password"
+                onChange={handleChange}
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition outline-none"
+                maxLength={8}
+                
+              />
+            </div>
+
+            <button
+              type="submit"
+              className="w-full bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition"
+            >
+              Sign In
+            </button>
+          </form>
+
+          <div className="mt-6 text-center">
+            <p className="text-sm text-gray-600">
+              Don&apos;t have an account?{' '}
+              <Link href="/register" className="text-blue-600 font-medium hover:underline">
+                Sign up
+              </Link>
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }
