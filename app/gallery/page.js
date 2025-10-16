@@ -7,10 +7,58 @@ export default function Gallery() {
   const [catalogs, setCatalogs] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // Gallery catalog data using the BMW PDF
+  const dummyCatalogs = [
+    {
+      id: 1,
+      name: "BMW Headlights Collection",
+      description: "Premium BMW headlight designs and specifications",
+      preview: "/bmw_headlights_lights_137326_3840x2400.pdf",
+      file: { name: "bmw_headlights_lights_137326_3840x2400.pdf" }
+    },
+    {
+      id: 2,
+      name: "BMW Lighting Catalog",
+      description: "Complete BMW automotive lighting solutions",
+      preview: "/bmw_headlights_lights_137326_3840x2400.pdf",
+      file: { name: "bmw_headlights_lights_137326_3840x2400.pdf" }
+    },
+    {
+      id: 3,
+      name: "Automotive Lights Guide",
+      description: "Professional automotive lighting catalog and guide",
+      preview: "/bmw_headlights_lights_137326_3840x2400.pdf",
+      file: { name: "bmw_headlights_lights_137326_3840x2400.pdf" }
+    },
+    {
+      id: 4,
+      name: "BMW Parts Manual",
+      description: "Comprehensive BMW parts and accessories manual",
+      preview: "/bmw_headlights_lights_137326_3840x2400.pdf",
+      file: { name: "bmw_headlights_lights_137326_3840x2400.pdf" }
+    },
+    {
+      id: 5,
+      name: "Headlight Specifications",
+      description: "Detailed headlight technical specifications and features",
+      preview: "/bmw_headlights_lights_137326_3840x2400.pdf",
+      file: { name: "bmw_headlights_lights_137326_3840x2400.pdf" }
+    },
+    {
+      id: 6,
+      name: "BMW Service Guide",
+      description: "BMW headlight installation and service documentation",
+      preview: "/bmw_headlights_lights_137326_3840x2400.pdf",
+      file: { name: "bmw_headlights_lights_137326_3840x2400.pdf" }
+    }
+  ];
+
   useEffect(() => {
     // Load catalogs from localStorage
     const savedCatalogs = JSON.parse(localStorage.getItem('catalogs') || '[]');
-    setCatalogs(savedCatalogs);
+    // Combine uploaded catalogs with dummy catalogs
+    const allCatalogs = [...savedCatalogs, ...dummyCatalogs];
+    setCatalogs(allCatalogs);
     setLoading(false);
   }, []);
 
@@ -58,39 +106,115 @@ export default function Gallery() {
             <p className="mt-1 text-gray-500">Get started by creating a new catalog in the dashboard.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {catalogs.map((catalog) => (
-              <div 
-                key={catalog.id} 
-                className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-200 hover:shadow-md transition-shadow duration-300"
-              >
-                {catalog.image && (
-                  <div className="h-48 bg-gray-100 overflow-hidden">
-                    <img 
-                      src={catalog.image} 
-                      alt={catalog.name}
-                      className="w-full h-full object-cover"
-                    />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {catalogs.map((catalog) => {
+              const name = (catalog?.file?.name ?? "").toString();
+              
+              return (
+                <div 
+                  key={catalog.id} 
+                  className="relative group bg-white/90 backdrop-blur-sm border border-gray-200 rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col h-80"
+                >
+                  {/* PDF Preview - Full Card Coverage */}
+                  <div 
+                    className="relative flex-1 w-full bg-gradient-to-br from-gray-50 to-gray-100 overflow-hidden"
+                    style={{ overflow: 'hidden', minHeight: '180px' }}
+                  >
+                    {catalog.preview ? (
+                      <iframe
+                        src={`${catalog.preview}#toolbar=0&navpanes=0&scrollbar=0&zoom=page-width&view=FitH`}
+                        title={catalog.name || "PDF Preview"}
+                        className="w-full h-full pointer-events-none"
+                        style={{ 
+                          border: 'none', 
+                          overflow: 'hidden',
+                          width: '120%',
+                          height: '120%',
+                          marginLeft: '-10%',
+                          marginTop: '-10%',
+                          transform: 'scale(0.85)'
+                        }}
+                        scrolling="no"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-gray-400">
+                        <svg className="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                      </div>
+                    )}
                   </div>
-                )}
-                <div className="p-6">
-                  <h3 className="text-xl font-semibold text-gray-900 mb-2">{catalog.name}</h3>
-                  {catalog.description && (
-                    <p className="text-gray-600 mb-4 line-clamp-2">{catalog.description}</p>
-                  )}
-                  <div className="flex flex-wrap gap-2 mt-4">
-                    {catalog.tags && catalog.tags.split(',').map((tag, index) => (
-                      <span 
-                        key={index} 
-                        className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800"
-                      >
-                        {tag.trim()}
-                      </span>
-                    ))}
+
+                  {/* Catalog Info - Compact Design with Hover Overlay */}
+                  <div className="relative p-3 flex-shrink-0">
+                    {/* File Details - Normal State */}
+                    <div className="group-hover:opacity-60 transition-all duration-300">
+                      {/* File Name Badge */}
+                      <div className="mb-2">
+                        <span className="inline-flex items-center text-xs text-indigo-600 bg-indigo-50 px-2 py-1 rounded-md font-medium border border-indigo-100">
+                          <svg className="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                          </svg>
+                          {name}
+                        </span>
+                      </div>
+                      
+                      {/* Catalog Name */}
+                      <h3 className="text-sm font-semibold text-gray-800 mb-1 line-clamp-1 leading-tight">{catalog.name}</h3>
+                      
+                      {/* Description - More Compact */}
+                      <p className="text-xs text-gray-600 line-clamp-1">
+                        {catalog.description || "No description available"}
+                      </p>
+                    </div>
+
+                    {/* Action Buttons Overlay - Appears on Hover */}
+                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 bg-white/70 backdrop-blur-sm rounded-lg">
+                      <div className="flex justify-center gap-3 transform translate-y-2 group-hover:translate-y-0 transition-transform duration-300">
+                        <button
+                          onClick={() => window.open(catalog.preview, "_blank")}
+                          className="flex flex-col items-center justify-center w-12 h-12 bg-white shadow-md rounded-lg hover:bg-indigo-50 text-indigo-600 transition-all duration-200 hover:scale-105 hover:shadow-lg border border-indigo-100"
+                          title="View PDF"
+                        >
+                          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                          </svg>
+                        </button>
+
+                        <button
+                          onClick={() => {
+                            const a = document.createElement("a");
+                            a.href = catalog.preview;
+                            a.download = catalog.name || "catalog.pdf";
+                            a.click();
+                          }}
+                          className="flex flex-col items-center justify-center w-12 h-12 bg-white shadow-md rounded-lg hover:bg-green-50 text-green-600 transition-all duration-200 hover:scale-105 hover:shadow-lg border border-green-100"
+                          title="Download PDF"
+                        >
+                          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5m0 0l5-5m-5 5V4" />
+                          </svg>
+                        </button>
+
+                        <button
+                          onClick={() => {
+                            navigator.clipboard.writeText(catalog.preview);
+                            alert("Link copied to clipboard!");
+                          }}
+                          className="flex flex-col items-center justify-center w-12 h-12 bg-white shadow-md rounded-lg hover:bg-purple-50 text-purple-600 transition-all duration-200 hover:scale-105 hover:shadow-lg border border-purple-100"
+                          title="Copy Link"
+                        >
+                          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-2 10h2a2 2 0 002-2v-8a2 2 0 00-2-2h-2m-8 8h8" />
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </main>
