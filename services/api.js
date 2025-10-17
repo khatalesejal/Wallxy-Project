@@ -1,21 +1,19 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 
-// Create the base API service
 export const api = createApi({
-  reducerPath: 'api', // name in the Redux store
+  reducerPath: 'api',
   baseQuery: fetchBaseQuery({
-    baseUrl: 'http://localhost:5000/api', 
+    baseUrl: 'http://localhost:3000/api',
   }),
-  tagTypes: ['User', 'Post'], //for cache invalidation
+  tagTypes: ['User', 'File', 'Catalog'],
   endpoints: (builder) => ({
-    
-    //Get all users
+    // Get all users
     getUsers: builder.query({
       query: () => '/users',
       providesTags: ['User'],
     }),
 
-    //Register new user
+    // Register new user
     registerUser: builder.mutation({
       query: (newUser) => ({
         url: '/auth/register',
@@ -25,7 +23,7 @@ export const api = createApi({
       invalidatesTags: ['User'],
     }),
 
-    //Login user
+    // Login user
     loginUser: builder.mutation({
       query: (credentials) => ({
         url: '/auth/login',
@@ -34,18 +32,34 @@ export const api = createApi({
       }),
     }),
 
-    //Get single user
+    // Get single user
     getUserById: builder.query({
       query: (id) => `/users/${id}`,
       providesTags: ['User'],
     }),
+
+    // CRUD for files
+    getFiles: builder.query({
+      query: () => '/files/crud',
+      providesTags: ['File'],
+    }),
+
+    addFileToCatalog: builder.mutation({
+      query: (fileId) => ({
+        url: '/files/catalog/add',
+        method: 'POST',
+        body: { fileId },
+      }),
+      invalidatesTags: ['Catalog'],
+    }),
   }),
 });
 
-// Export hooks for usage in functional components
 export const {
   useGetUsersQuery,
   useRegisterUserMutation,
   useLoginUserMutation,
   useGetUserByIdQuery,
+  useGetFilesQuery,
+  useAddFileToCatalogMutation,
 } = api;
