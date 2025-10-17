@@ -23,7 +23,7 @@ export const config = {
 // Convert Next.js Request to Node.js readable stream
 function requestToNodeStream(req) {
   const readable = new Readable();
-  readable._read = () => {};
+  readable._read = () => { };
 
   // Copy headers for formidable
   readable.headers = Object.fromEntries(req.headers.entries());
@@ -93,9 +93,13 @@ export async function POST(req) {
       uploadedFile.filepath,
       {
         folder: "wallxy_uploads",
-        resource_type: "auto",
+        resource_type: "raw",
+        use_filename: true,
+        unique_filename: false
+
       }
     );
+    console.log("uploadResult",uploadResult)
 
     //Save file metadata to MongoDB
     const newFile = await File.create({

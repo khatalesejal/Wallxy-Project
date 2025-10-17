@@ -12,6 +12,8 @@ export default function Dashboard() {
   const [openDropdownId, setOpenDropdownId] = useState(null);
   const [viewMode, setViewMode] = useState("grid"); // grid or list
   const dropdownRef = useRef(null);
+  const [stats, setStats] = useState({ uploadsCount: 0, catalogCount: 0, recentUploads: [], userCatalogs: [] });
+  const [loading, setLoading] = useState(true);
 
 
   const openModal = () => setShowModal(true);
@@ -20,26 +22,28 @@ export default function Dashboard() {
     setEditId(null);
   };
 
-  const handleEdit = (id) => {
-    const catalogToEdit = catalogs.find((c) => c.id === id);
-    if (!catalogToEdit) return;
-    setEditId(id);
-    setOpenDropdownId(null);
-    setShowModal(true);
-  };
+ const handleEdit = (id) => {
+  const catalogToEdit = catalogs.find((c) => c._id === id);
+  if (!catalogToEdit) return;
+  setEditId(id);
+  setShowModal(true);
+  setOpenDropdownId(null); // close dropdown
+};
+
 
   const handleDelete = (id) => {
-    if (confirm("Are you sure you want to delete this catalog?")) {
-      setCatalogs(catalogs.filter((c) => c.id !== id));
-    }
-    setOpenDropdownId(null);
-  };
+  if (confirm("Are you sure you want to delete this catalog?")) {
+    setCatalogs(catalogs.filter((c) => c._id !== id)); // use _id
+  }
+  setOpenDropdownId(null);
+};
+
 
   const handleSubmit = (catalogData) => {
     if (editId !== null) {
       setCatalogs(
         catalogs.map((c) =>
-          c.id === editId ? { ...catalogData, id: editId } : c
+          c._id === editId ? { ...catalogData, _id: editId } : c
         )
       );
     } else {
@@ -56,20 +60,20 @@ export default function Dashboard() {
     a.click();
   };
 
- const handleCopyLink = (link) => {
-  navigator.clipboard.writeText(link);
-  toast.success("Link copied to clipboard!", {
-    icon: "🔗",
-    style: {
-      borderRadius: "12px",
-      background: "linear-gradient(to right, #6366f1, #8b5cf6)", // Indigo → Purple gradient
-      color: "#ffffff",
-      fontWeight: "500",
-      boxShadow: "0 4px 15px rgba(99, 102, 241, 0.3)", // soft indigo glow
-      padding: "12px 16px",
-    },
-  });
-};
+  const handleCopyLink = (link) => {
+    navigator.clipboard.writeText(link);
+    toast.success("Link copied to clipboard!", {
+      icon: "🔗",
+      style: {
+        borderRadius: "12px",
+        background: "linear-gradient(to right, #6366f1, #8b5cf6)", // Indigo → Purple gradient
+        color: "#ffffff",
+        fontWeight: "500",
+        boxShadow: "0 4px 15px rgba(99, 102, 241, 0.3)", // soft indigo glow
+        padding: "12px 16px",
+      },
+    });
+  };
 
 
   const toggleDropdown = (id) => {
@@ -88,10 +92,44 @@ export default function Dashboard() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  useEffect(() => {
+    const fetchDashboard = async () => {
+      setLoading(true);
+      try {
+        const res = await fetch("/api/dashboard", {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            // Include auth header if your API requires JWT
+            "Authorization": `Bearer ${localStorage.getItem("token")}`
+          },
+        });
+
+        if (!res.ok) {
+          throw new Error("Failed to fetch dashboard data");
+        }
+
+        const data = await res.json();
+        console.log("Get response ", data)
+        setStats(data.stats || {});
+        setCatalogs(data.stats.userCatalogs || []);
+      } catch (err) {
+        console.error(err);
+        toast.error("Error loading dashboard data");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDashboard();
+  }, []);
+ 
+
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-100 pt-28 px-6 pb-10">
       <Navbar />
-       <Toaster position="bottom-right" reverseOrder={false} />
+      <Toaster position="bottom-right" reverseOrder={false} />
 
       <div className="max-w-7xl mx-auto space-y-8">
         {/* Dashboard Header with Stats */}
@@ -101,29 +139,17 @@ export default function Dashboard() {
               <h1 className="text-3xl font-bold text-gray-800 mb-2">Dashboard</h1>
               <p className="text-gray-600">Manage your PDF catalogs</p>
             </div>
-            
-       
             <div className="flex gap-4">
               <div className="bg-gradient-to-r from-indigo-500 to-purple-600 text-white px-6 py-4 rounded-xl shadow-lg">
-                <div className="text-2xl font-bold">{catalogs.length}</div>
+                <div className="text-2xl font-bold">{stats.catalogCount}</div>
                 <div className="text-sm opacity-90">Total Catalogs</div>
               </div>
+
             </div>
           </div>
         </div> */}
 
-        {/* Add New Button */}
-        {/* <div className="flex justify-end">
-          <button
-            onClick={openModal}
-            className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-xl hover:from-indigo-600 hover:to-purple-700 transition-all shadow-lg hover:shadow-xl transform hover:scale-105"
-          >
-            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
-            Add Catalog
-          </button>
-        </div> */}
+
 
         {/* Catalogs Section */}
         <div className="bg-white/70 backdrop-blur-lg border border-white/30 rounded-2xl shadow-md p-6">
@@ -162,17 +188,17 @@ export default function Dashboard() {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {catalogs.map((catalog) => {
-                const name = (catalog?.file?.name ?? "").toString();
-                
+                const name = (catalog?.catalogName ?? "").toString();
+
                 return (
                   <div
-                    key={catalog.id}
+                    key={catalog._id}
                     className="relative group bg-white/90 backdrop-blur-sm border border-gray-200 rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col h-80"
                   >
                     {/* Dropdown Menu */}
                     <div className="absolute top-3 right-3 z-10" ref={dropdownRef}>
                       <button
-                        onClick={() => toggleDropdown(catalog.id)}
+                        onClick={() => toggleDropdown(catalog._id)}
                         className="p-2 rounded-full bg-white/80 backdrop-blur-sm text-gray-600 hover:text-indigo-600 hover:bg-white shadow-sm transition-all"
                       >
                         <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
@@ -180,17 +206,17 @@ export default function Dashboard() {
                         </svg>
                       </button>
 
-                      {openDropdownId === catalog.id && (
+                      {openDropdownId === catalog._id && (
                         <div className="absolute right-0 mt-2 w-32 origin-top-right bg-white border border-gray-200 rounded-lg shadow-lg z-20">
                           <button
                             className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-indigo-50 hover:text-indigo-700 rounded-t-lg"
-                            onClick={() => handleEdit(catalog.id)}
+                            onClick={() => handleEdit(catalog._id)}
                           >
                             Edit
                           </button>
                           <button
                             className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-red-50 hover:text-red-600 rounded-b-lg"
-                            onClick={() => handleDelete(catalog.id)}
+                            onClick={() => handleDelete(catalog._id)}
                           >
                             Delete
                           </button>
@@ -199,37 +225,36 @@ export default function Dashboard() {
                     </div>
 
                     {/* PDF Preview - Full Card Coverage */}
-                    <div 
-                      className="relative flex-1 w-full bg-gradient-to-br from-gray-50 to-gray-100 overflow-hidden"
-                      style={{ overflow: 'hidden', minHeight: '180px' }}
-                    >
-                      {catalog.file && (/pdf/i.test(catalog.file.type || "") || /\.pdf$/i.test(catalog.preview || catalog.name || "")) ? (
+                    {/* inside your map for each catalog */}
+                    <div className="relative flex-1 w-full bg-gradient-to-br from-gray-50 to-gray-100" style={{ minHeight: 180 }}>
+                      {catalog.fileUrl && /\.pdf$/i.test(catalog.fileUrl) ? (
                         <iframe
-                          src={`${catalog.preview}#toolbar=0&navpanes=0&scrollbar=0&zoom=page-width&view=FitH`}
-                          title={catalog.name || "PDF Preview"}
-                          className="w-full h-full pointer-events-none"
-                          style={{ 
-                            border: 'none', 
-                            border: "none",
-    display: "block",
-    width: "100%",
-    height: "100%",
-    objectFit: "cover",
-    transform: "scale(1.15)", // zoom in slightly to remove edges
-    transformOrigin: "center center",
-    marginLeft: '-8%', marginTop: '-9%',
-    backgroundColor: "transparent",
+                          src={catalog.fileUrl + "#toolbar=0&navpanes=0&view=FitH"}
+                          title={catalog.catalogName || "PDF Preview"}
+                          className="w-full h-full"
+                          style={{
+                            border: 'none',
+                            width: '100%',
+                            height: '100%',
+                            minHeight: 180,
+                            pointerEvents: 'auto',   // allow interaction
+                            transform: 'none',       // remove weird zoom/offset
+                            backgroundColor: 'transparent',
                           }}
-                          scrolling="no"
+                          // let the iframe scroll
+                          scrolling="yes"
+                          // helpful error handler
+                          onError={(e) => {
+                            console.error("Iframe load failed for", catalog.fileUrl, e);
+                          }}
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center text-gray-400">
-                          <svg className="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                          </svg>
+                          <p>No preview available</p>
                         </div>
                       )}
                     </div>
+
 
                     {/* Catalog Info - Compact Design with Hover Overlay */}
                     <div className="relative p-3 flex-shrink-0">
@@ -244,10 +269,10 @@ export default function Dashboard() {
                             {name}
                           </span>
                         </div>
-                        
+
                         {/* Catalog Name */}
                         <h3 className="text-sm font-semibold text-gray-800 mb-1 line-clamp-1 leading-tight">{catalog.name}</h3>
-                        
+
                         {/* Description - More Compact */}
                         <p className="text-xs text-gray-600 line-clamp-1">
                           {catalog.description || "No description available"}
@@ -331,9 +356,7 @@ export default function Dashboard() {
         show={showModal}
         onClose={closeModal}
         onSubmit={handleSubmit}
-        editCatalog={
-          editId !== null ? catalogs.find((c) => c.id === editId) : null
-        }
+       editCatalog={editId ? catalogs.find((c) => c._id === editId) : null}
       />
     </div>
   );

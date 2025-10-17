@@ -1,3 +1,4 @@
+//app//api//catalog//all//route.js
 import Catalog from "../../../models/Catalog.js";
 import { getUserFromRequest } from "../../../util/auth.js";
 import { connectToDB } from "../../../util/db.js";

@@ -7,22 +7,31 @@ import { getUserFromRequest } from "../../../util/auth.js"; // make sure you hav
 /**
  * GET catalog by ID
  */
-export async function GET(req, { params }) {
+export async function GET(req, context) {
   try {
     await connectToDB();
-    const { id } = params;
+
+    // ✅ Await params from context
+    const { id } = await context.params;
 
     const catalog = await Catalog.findById(id);
     if (!catalog) {
-      return new Response(JSON.stringify({ error: "Catalog not found" }), { status: 404 });
+      return new Response(
+        JSON.stringify({ error: "Catalog not found" }),
+        { status: 404 }
+      );
     }
 
     return new Response(JSON.stringify(catalog), { status: 200 });
   } catch (err) {
     console.error("GET CATALOG ERROR:", err);
-    return new Response(JSON.stringify({ error: "Server error" }), { status: 500 });
+    return new Response(
+      JSON.stringify({ error: "Server error" }),
+      { status: 500 }
+    );
   }
 }
+
 
 //PUT -- edit catalog by ID
 export async function PUT(req, { params }) {

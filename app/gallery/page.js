@@ -6,28 +6,28 @@ import Navbar from '../components/Navbar';
 export default function Gallery() {
   const [catalogs, setCatalogs] = useState([]);
   const [loading, setLoading] = useState(true);
-
-  // Gallery catalog data with working PDF URLs
-  const dummyCatalogs = [
-   
-    {
-      id: 1,
-      name: "BMW Lighting Catalog",
-      description: "Complete BMW automotive lighting solutions",
-      preview: "https://www.africau.edu/images/default/sample.pdf",
-      file: { name: "bmw_lighting_catalog.pdf" }
-    },
-   
-   
-  ];
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    // Load catalogs from localStorage
-    const savedCatalogs = JSON.parse(localStorage.getItem('catalogs') || '[]');
-    // Combine uploaded catalogs with dummy catalogs
-    const allCatalogs = [...savedCatalogs, ...dummyCatalogs];
-    setCatalogs(allCatalogs);
-    setLoading(false);
+    async function fetchCatalogs() {
+      setLoading(true);
+      setError("");
+      try {
+        const res = await fetch('/api/catalog/all'); // Your backend endpoint
+        if (!res.ok) {
+          throw new Error(`Error: ${res.status}`);
+        }
+        const data = await res.json();
+        setCatalogs(data);
+      } catch (err) {
+        console.error(err);
+        setError("Failed to load catalogs. Please try again.");
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchCatalogs();
   }, []);
 
   if (loading) {
@@ -44,10 +44,21 @@ export default function Gallery() {
     );
   }
 
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+        <Navbar />
+        <div className="pt-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto text-center">
+          <p className="text-red-500 text-lg">{error}</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       <Navbar />
-      
+
       <main className="pt-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold text-gray-900 mb-2">Gallery</h1>
@@ -77,14 +88,13 @@ export default function Gallery() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {catalogs.map((catalog) => {
               const name = (catalog?.file?.name ?? "").toString();
-              
+
               return (
-                <div 
-                  key={catalog.id} 
+                <div
+                  key={catalog._id || catalog.id}
                   className="relative group bg-white/90 backdrop-blur-sm border border-gray-200 rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col h-80"
                 >
-                  {/* PDF Preview - Full Card Coverage */}
-                  <div 
+                  <div
                     className="relative flex-1 w-full bg-gradient-to-br from-gray-50 to-gray-100 overflow-hidden"
                     style={{ overflow: 'hidden', minHeight: '180px' }}
                   >
@@ -93,14 +103,14 @@ export default function Gallery() {
                         src={`${catalog.preview}#toolbar=0&navpanes=0&scrollbar=0&zoom=page-width&view=FitH`}
                         title={catalog.name || "PDF Preview"}
                         className="w-full h-full pointer-events-none"
-                        style={{ 
-                          border: 'none', 
+                        style={{
+                          border: 'none',
                           overflow: 'hidden',
                           width: '120%',
                           height: '120%',
                           marginLeft: '-10%',
                           marginTop: '-10%',
-                          transform: 'scale(0.85)'
+                          transform: 'scale(0.85)',
                         }}
                         scrolling="no"
                       />
@@ -113,34 +123,25 @@ export default function Gallery() {
                     )}
                   </div>
 
-                  {/* Catalog Info - Compact Design with Hover Overlay */}
                   <div className="relative p-4 flex-shrink-0">
-                    {/* File Details - Normal State */}
                     <div className="group-hover:opacity-60 transition-all duration-300">
-                      {/* File Name Badge - Fixed Width with 2 Lines */}
                       <div className="mb-3">
                         <div className="w-full">
                           <span className="inline-flex items-start text-xs text-indigo-600 bg-indigo-50 px-3 py-2 rounded-md font-medium border border-indigo-100 w-full break-words leading-relaxed">
                             <svg className="h-3 w-3 mr-2 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                             </svg>
-                            <span className="line-clamp-2 leading-tight">
-                              {name}
-                            </span>
+                            <span className="line-clamp-2 leading-tight">{name}</span>
                           </span>
                         </div>
                       </div>
-                      
-                      {/* Catalog Name */}
+
                       <h3 className="text-sm font-semibold text-gray-800 mb-2 line-clamp-2 leading-tight">{catalog.name}</h3>
-                      
-                      {/* Description - More Compact */}
                       <p className="text-xs text-gray-600 line-clamp-2 leading-relaxed">
                         {catalog.description || "No description available"}
                       </p>
                     </div>
 
-                    {/* Action Buttons Overlay - Appears on Hover */}
                     <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 bg-white/70 backdrop-blur-sm rounded-lg">
                       <div className="flex justify-center gap-3 transform translate-y-2 group-hover:translate-y-0 transition-transform duration-300">
                         <button

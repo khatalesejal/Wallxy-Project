@@ -2,12 +2,16 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from "next/navigation";
+import toast, { Toaster } from "react-hot-toast";
+
 
 export default function LoginPage() {
-  const [formData, setFormData] = useState({
-    email: '',
-    password: ''
-  });
+   const router = useRouter();
+ const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -17,10 +21,34 @@ export default function LoginPage() {
     }));
   };
 
-  const handleSubmit = (e) => {
+ const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log('Login:', formData);
-    // Add your login logic here
+    setLoading(true);
+
+    try {
+      const res = await fetch("/api/user/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }), // ✅ use state variables, not DOM nodes
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        toast.error(data.error || "Login failed");
+      } else {
+        // Save token and user info
+        localStorage.setItem("token", data.token);
+        localStorage.setItem("user", JSON.stringify(data.user));
+        toast.success("Login successful!");
+        router.push("/dashboard");
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Server error");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -57,9 +85,10 @@ export default function LoginPage() {
                 type="email"
                 id="email"
                 name="email"
-                value={formData.email}
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 placeholder="Enter your email"
-                onChange={handleChange}
+               
                 className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition outline-none"
                 
               />
@@ -78,9 +107,10 @@ export default function LoginPage() {
                 type="password"
                 id="password"
                 name="password"
-                value={formData.password}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
                 placeholder="Enter your password"
-                onChange={handleChange}
+                
                 className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition outline-none"
                 maxLength={8}
                 
@@ -89,9 +119,10 @@ export default function LoginPage() {
 
             <button
               type="submit"
-              className="w-full bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition"
+              disabled={loading}
+              className="w-full bg-indigo-500 text-white py-2 rounded-md hover:bg-indigo-600 transition"
             >
-              Sign In
+              {loading ? "Logging in..." : "Login"}
             </button>
           </form>
 

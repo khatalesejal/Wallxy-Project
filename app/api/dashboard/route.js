@@ -25,9 +25,10 @@ export async function GET(req) {
       .select("catalogName fileUrl createdAt");
 
     //Catalogs created by user
-    const userCatalogs = await File.find({ owner: user._id, catalog: true })
+    const userCatalogs = await File.find({ owner: user._id })
       .sort({ createdAt: -1 })
       .select("catalogName fileUrl createdAt description tags");
+      console.log("user catalogs ",userCatalogs)
 
     // Response
     return NextResponse.json({

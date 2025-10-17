@@ -2,8 +2,10 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';;
 
 export default function SignupPage() {
+  const router = useRouter();
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -21,12 +23,6 @@ export default function SignupPage() {
 
   const handleSubmit = async (e) => {
   e.preventDefault();
-
-  // Optional: check password and confirmPassword match
-  // if (formData.password !== formData.confirmPassword) {
-  //   alert("Passwords do not match");
-  //   return;
-  // }
 
   try {
     const res = await fetch('/api/user/register', {
@@ -50,8 +46,8 @@ export default function SignupPage() {
 
     // Success
     alert('Account created successfully!');
-    // Optional: redirect to login page
-    // window.location.href = '/';
+     router.push('/dashboard');
+    
   } catch (err) {
     console.error('Signup error:', err);
     alert('Server error');
