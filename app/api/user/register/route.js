@@ -5,13 +5,13 @@ import bcrypt from "bcryptjs";
 import { NextResponse } from "next/server";
 export async function POST(req) {
   try {
+    await connectToDB();
     const body = await req.json();
     const { username, email, password } = body;
     if (!username || !email || !password) {
       return NextResponse.json({ error: "username, email and password are required" }, { status: 400 });
     }
 
-    await connectToDB();
     const existing = await User.findOne({ email: email.toLowerCase() });
     if (existing) {
       return NextResponse.json({ error: "Email already registered" }, { status: 409 });

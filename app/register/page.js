@@ -19,14 +19,45 @@ export default function SignupPage() {
     }));
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
+  const handleSubmit = async (e) => {
+  e.preventDefault();
 
-   
+  // Optional: check password and confirmPassword match
+  // if (formData.password !== formData.confirmPassword) {
+  //   alert("Passwords do not match");
+  //   return;
+  // }
 
-    console.log('Signup:', formData);
-    // Handle signup logic here
-  };
+  try {
+    const res = await fetch('/api/user/register', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        username: formData.name,
+        email: formData.email,
+        password: formData.password
+      }),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      alert(data.error || 'Something went wrong');
+      return;
+    }
+
+    // Success
+    alert('Account created successfully!');
+    // Optional: redirect to login page
+    // window.location.href = '/';
+  } catch (err) {
+    console.error('Signup error:', err);
+    alert('Server error');
+  }
+};
+
 
   return (
     <div className="min-h-screen flex flex-col md:flex-row">
