@@ -31,27 +31,70 @@ export default function Dashboard() {
 };
 
 
-  const handleDelete = (id) => {
-  if (confirm("Are you sure you want to delete this catalog?")) {
-    setCatalogs(catalogs.filter((c) => c._id !== id)); // use _id
-  }
-  setOpenDropdownId(null);
-};
-
-
-  const handleSubmit = (catalogData) => {
-    if (editId !== null) {
-      setCatalogs(
-        catalogs.map((c) =>
-          c._id === editId ? { ...catalogData, _id: editId } : c
-        )
-      );
-    } else {
-      const newId =
-        (catalogs.length ? Math.max(...catalogs.map((c) => c.id)) : 0) + 1;
-      setCatalogs([...catalogs, { ...catalogData, id: newId }]);
+  const handleDelete = async (id) => {
+    if (!confirm("Are you sure you want to delete this catalog?")) {
+      setOpenDropdownId(null);
+      return;
     }
+
+    try {
+      const response = await fetch(`/api/catalog/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+
+      if (response.ok) {
+        // Remove from local state
+        setCatalogs(catalogs.filter((c) => c._id !== id));
+        toast.success('Catalog deleted successfully!');
+      } else {
+        const errorData = await response.json();
+        toast.error(errorData.error || 'Failed to delete catalog');
+      }
+    } catch (error) {
+      console.error('Delete error:', error);
+      toast.error('Failed to delete catalog');
+    }
+    
+    setOpenDropdownId(null);
+  };
+
+
+  const handleSubmit = async (catalogData) => {
+    // Close modal first
     closeModal();
+    
+    // Refresh the dashboard data to get the latest catalogs
+    try {
+      const res = await fetch("/api/dashboard", {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${localStorage.getItem("token")}`
+        },
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        setStats(data.stats || {});
+        setCatalogs(data.stats.userCatalogs || []);
+      }
+    } catch (err) {
+      console.error("Error refreshing dashboard:", err);
+      // Fallback: try to update the local state
+      if (editId !== null) {
+        setCatalogs(
+          catalogs.map((c) =>
+            c._id === editId ? { ...catalogData, _id: editId } : c
+          )
+        );
+      } else {
+        // For new catalogs, we'll just refresh on next page load
+        // since we don't have the proper structure from the API response
+      }
+    }
   };
   const handleDownload = (url, name) => {
     const a = document.createElement("a");

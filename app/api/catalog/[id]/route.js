@@ -46,7 +46,7 @@ export async function PUT(req, { params }) {
     }
 
     const body = await req.json();
-    const { title, description } = body;
+    const { title, description, fileUrl } = body;
 
     if (!title) {
       return new Response(JSON.stringify({ error: "Title is required" }), { status: 400 });
@@ -65,6 +65,7 @@ export async function PUT(req, { params }) {
     // Update fields
     catalog.title = title;
     if (description !== undefined) catalog.description = description;
+    if (fileUrl !== undefined) catalog.fileUrl = fileUrl;
 
     const updatedCatalog = await catalog.save();
 
