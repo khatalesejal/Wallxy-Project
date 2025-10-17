@@ -7,50 +7,30 @@ export default function Gallery() {
   const [catalogs, setCatalogs] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Gallery catalog data using the BMW PDF
+  // Gallery catalog data with working PDF URLs
   const dummyCatalogs = [
     {
       id: 1,
       name: "BMW Headlights Collection",
       description: "Premium BMW headlight designs and specifications",
-      preview: "/bmw_headlights_lights_137326_3840x2400.pdf",
-      file: { name: "bmw_headlights_lights_137326_3840x2400.pdf" }
+      preview: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
+      file: { name: "bmw_headlights_collection.pdf" }
     },
     {
       id: 2,
       name: "BMW Lighting Catalog",
       description: "Complete BMW automotive lighting solutions",
-      preview: "/bmw_headlights_lights_137326_3840x2400.pdf",
-      file: { name: "bmw_headlights_lights_137326_3840x2400.pdf" }
+      preview: "https://www.africau.edu/images/default/sample.pdf",
+      file: { name: "bmw_lighting_catalog.pdf" }
     },
     {
       id: 3,
-      name: "Automotive Lights Guide",
-      description: "Professional automotive lighting catalog and guide",
-      preview: "/bmw_headlights_lights_137326_3840x2400.pdf",
-      file: { name: "bmw_headlights_lights_137326_3840x2400.pdf" }
+      name: "Automotive Guide",
+      description: "Professional automotive lighting guide",
+      preview: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
+      file: { name: "automotive_guide.pdf" }
     },
-    {
-      id: 4,
-      name: "BMW Parts Manual",
-      description: "Comprehensive BMW parts and accessories manual",
-      preview: "/bmw_headlights_lights_137326_3840x2400.pdf",
-      file: { name: "bmw_headlights_lights_137326_3840x2400.pdf" }
-    },
-    {
-      id: 5,
-      name: "Headlight Specifications",
-      description: "Detailed headlight technical specifications and features",
-      preview: "/bmw_headlights_lights_137326_3840x2400.pdf",
-      file: { name: "bmw_headlights_lights_137326_3840x2400.pdf" }
-    },
-    {
-      id: 6,
-      name: "BMW Service Guide",
-      description: "BMW headlight installation and service documentation",
-      preview: "/bmw_headlights_lights_137326_3840x2400.pdf",
-      file: { name: "bmw_headlights_lights_137326_3840x2400.pdf" }
-    }
+   
   ];
 
   useEffect(() => {
@@ -146,24 +126,28 @@ export default function Gallery() {
                   </div>
 
                   {/* Catalog Info - Compact Design with Hover Overlay */}
-                  <div className="relative p-3 flex-shrink-0">
+                  <div className="relative p-4 flex-shrink-0">
                     {/* File Details - Normal State */}
                     <div className="group-hover:opacity-60 transition-all duration-300">
-                      {/* File Name Badge */}
-                      <div className="mb-2">
-                        <span className="inline-flex items-center text-xs text-indigo-600 bg-indigo-50 px-2 py-1 rounded-md font-medium border border-indigo-100">
-                          <svg className="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                          </svg>
-                          {name}
-                        </span>
+                      {/* File Name Badge - Fixed Width with 2 Lines */}
+                      <div className="mb-3">
+                        <div className="w-full">
+                          <span className="inline-flex items-start text-xs text-indigo-600 bg-indigo-50 px-3 py-2 rounded-md font-medium border border-indigo-100 w-full break-words leading-relaxed">
+                            <svg className="h-3 w-3 mr-2 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                            <span className="line-clamp-2 leading-tight">
+                              {name}
+                            </span>
+                          </span>
+                        </div>
                       </div>
                       
                       {/* Catalog Name */}
-                      <h3 className="text-sm font-semibold text-gray-800 mb-1 line-clamp-1 leading-tight">{catalog.name}</h3>
+                      <h3 className="text-sm font-semibold text-gray-800 mb-2 line-clamp-2 leading-tight">{catalog.name}</h3>
                       
                       {/* Description - More Compact */}
-                      <p className="text-xs text-gray-600 line-clamp-1">
+                      <p className="text-xs text-gray-600 line-clamp-2 leading-relaxed">
                         {catalog.description || "No description available"}
                       </p>
                     </div>
