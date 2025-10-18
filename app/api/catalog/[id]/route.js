@@ -1,145 +1,20 @@
-// import { NextResponse } from "next/server.js";
-// import Catalog from "../../../models/Catalog.js";
-// import { getUserFromRequest } from "../../../util/auth.js";
-// import { connectToDB } from "../../../util/db.js";
-
-// /**
-//  * ✅ GET Single Catalog by ID
-//  */
-// export async function GET(req, context) {
-//   try {
-//     await connectToDB();
-
-//     const { id } = context.params;
-//     const catalog = await Catalog.findById(id).populate("owner", "username email");
-
-//     if (!catalog) {
-//       return new Response(JSON.stringify({ error: "Catalog not found" }), { status: 404 });
-//     }
-
-//     return NextResponse.json(
-//       {
-//         success: true,
-//         data: catalog,
-//       },
-//       { status: 200 }
-//     );
-//   } catch (err) {
-//     console.error("GET catalog error:", err);
-//     return new Response(JSON.stringify({ error: err.message }), { status: 500 });
-//   }
-// }
-
-// /**
-//  * ✅ PUT Update Catalog
-//  */
-// export async function PUT(req, context) {
-//   try {
-//     await connectToDB();
-//      const { id } = await context.params;
-//     const user = await getUserFromRequest(req);
-//  //const { id } = await context.params;
-//     if (!user) {
-//       return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
-//     }
-
-//     const existingCatalog = await Catalog.findById(id);
-//     if (!existingCatalog) {
-//       return new Response(JSON.stringify({ error: "Catalog not found" }), { status: 404 });
-//     }
-
-//     // Ensure only owner can edit
-//     if (existingCatalog.owner.toString() !== user._id.toString()) {
-//       return new Response(JSON.stringify({ error: "Forbidden: You don’t own this catalog" }), {
-//         status: 403,
-//       });
-//     }
-
-//     const body = await req.json();
-//     const { title, description, fileUrl, filename } = body;
-
-//     if (!title && !description && !fileUrl && !filename) {
-//       return new Response(JSON.stringify({ error: "No fields provided for update" }), { status: 400 });
-//     }
-
-//     if (title) existingCatalog.title = title;
-//     if (description) existingCatalog.description = description;
-//     if (fileUrl && filename) {
-//       existingCatalog.file = { filename, fileUrl };
-//     }
-
-//     await existingCatalog.save();
-
-//     return NextResponse.json(
-//       {
-//         success: true,
-//         message: "Catalog updated successfully",
-//         data: existingCatalog,
-//       },
-//       { status: 200 }
-//     );
-//   } catch (err) {
-//     console.error("PUT catalog error:", err);
-//     return new Response(JSON.stringify({ error: err.message }), { status: 500 });
-//   }
-// }
-
-// /**
-//  * ✅ DELETE Catalog
-//  */
-// export async function DELETE(req, context) {
-//   try {
-//     await connectToDB();
-//     const { id } = context.params;
-//     const user = await getUserFromRequest(req);
-
-//     if (!user) {
-//       return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
-//     }
-
-//     const catalog = await Catalog.findById(id);
-//     if (!catalog) {
-//       return new Response(JSON.stringify({ error: "Catalog not found" }), { status: 404 });
-//     }
-
-//     // Ensure only owner can delete
-//     if (catalog.owner.toString() !== user._id.toString()) {
-//       return new Response(JSON.stringify({ error: "Forbidden: You don’t own this catalog" }), {
-//         status: 403,
-//       });
-//     }
-
-//     await Catalog.findByIdAndDelete(id);
-
-//     return NextResponse.json(
-//       {
-//         success: true,
-//         message: "Catalog deleted successfully",
-//       },
-//       { status: 200 }
-//     );
-//   } catch (err) {
-//     console.error("DELETE catalog error:", err);
-//     return new Response(JSON.stringify({ error: err.message }), { status: 500 });
-//   }
-// }
-
-
 import { NextResponse } from "next/server.js";
 import Catalog from "../../../models/Catalog.js";
 import { getUserFromRequest } from "../../../util/auth.js";
 import { connectToDB } from "../../../util/db.js";
+import mongoose from "mongoose";
 
 export async function GET(req, context) {
   try {
     await connectToDB();
 
-    const { id } = await context.params; // ✅ always await params
+    const { id } = await context.params;
     const catalog = await Catalog.findById(id).populate("owner", "username email");
 
     if (!catalog) {
       return new Response(JSON.stringify({ error: "Catalog not found" }), { status: 404 });
     }
+
 
     return NextResponse.json({ success: true, data: catalog }, { status: 200 });
   } catch (err) {
@@ -148,54 +23,75 @@ export async function GET(req, context) {
   }
 }
 
+// put----
+
 export async function PUT(req, context) {
   try {
     await connectToDB();
 
-    const { id } = await context.params;
-    const user = await getUserFromRequest(req);
+    const { id } = context.params; // owner ID from URL
+    const ownerObjectId = new mongoose.Types.ObjectId(id); // convert string to ObjectId
 
+    const user = await getUserFromRequest(req);
     if (!user) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
     }
 
-    const catalog = await Catalog.findById(id);
+    // Find a single catalog for this owner
+    const catalog = await Catalog.findOne({ owner: ownerObjectId });
     if (!catalog) {
       return new Response(JSON.stringify({ error: "Catalog not found" }), { status: 404 });
     }
 
-    // ✅ Fix: Compare strings, make sure both are strings
+    // Check ownership
     if (catalog.owner.toString() !== user._id.toString()) {
-      return new Response(JSON.stringify({ error: "Forbidden: You are not the owner" }), {
-        status: 403,
-      });
+      return new Response(JSON.stringify({ error: "Forbidden: You are not the owner" }), { status: 403 });
     }
 
-    const body = await req.json();
-    const { title, description, fileUrl, filename } = body;
+    // Safely parse JSON body
+    let body;
+    try {
+      body = await req.json();
+    } catch (err) {
+      return new Response(JSON.stringify({ error: "Invalid JSON in request body" }), { status: 400 });
+    }
 
+    const { title, description, file } = body;
+
+    // Update fields only if provided
     if (title) catalog.title = title;
     if (description) catalog.description = description;
-    if (fileUrl && filename) catalog.file = { filename, fileUrl };
+    if (file && file.filename && file.fileUrl) {
+      catalog.file = { filename: file.filename, fileUrl: file.fileUrl };
+    }
 
     await catalog.save();
 
-    return NextResponse.json({ success: true, message: "Catalog updated", data: catalog }, { status: 200 });
+    return NextResponse.json({
+      success: true,
+      message: "Catalog updated",
+      data: catalog
+    }, { status: 200 });
+
   } catch (err) {
     console.error("PUT catalog error:", err);
     return new Response(JSON.stringify({ error: err.message }), { status: 500 });
   }
 }
 
+// delete ------
+
 export async function DELETE(req, context) {
   try {
     await connectToDB();
 
-    const { id } = await context.params;
-    const user = await getUserFromRequest(req);
+    // Correct way to get params in Next.js App Router
+    const params = await context.params;
+    const id = params.id;
 
-    if (!user) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
+    // Validate ObjectId
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return new Response(JSON.stringify({ error: "Invalid catalog ID" }), { status: 400 });
     }
 
     const catalog = await Catalog.findById(id);
@@ -203,16 +99,19 @@ export async function DELETE(req, context) {
       return new Response(JSON.stringify({ error: "Catalog not found" }), { status: 404 });
     }
 
-    // ✅ Only owner can delete
-    if (catalog.owner.toString() !== user._id.toString()) {
-      return new Response(JSON.stringify({ error: "Forbidden: You are not the owner" }), {
-        status: 403,
-      });
+    const user = await getUserFromRequest(req);
+    if (!user) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
     }
 
-    await Catalog.findByIdAndDelete(id);
+    if (catalog.owner.toString() !== user._id.toString()) {
+      return new Response(JSON.stringify({ error: "Forbidden: You are not the owner" }), { status: 403 });
+    }
 
-    return NextResponse.json({ success: true, message: "Catalog deleted" }, { status: 200 });
+    await Catalog.deleteOne({ _id: id });
+
+    return NextResponse.json({ success: true, message: "Catalog deleted successfully" });
+
   } catch (err) {
     console.error("DELETE catalog error:", err);
     return new Response(JSON.stringify({ error: err.message }), { status: 500 });
