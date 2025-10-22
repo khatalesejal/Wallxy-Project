@@ -10,8 +10,8 @@ export default function Dashboard() {
   const [catalogs, setCatalogs] = useState([]);
   const [editId, setEditId] = useState(null);
   const [openDropdownId, setOpenDropdownId] = useState(null);
-  const [viewMode, setViewMode] = useState("grid"); // grid or list
-  const dropdownRef = useRef(null);
+  const [viewMode, setViewMode] = useState("grid"); 
+  const dropdownRefs = useRef({});
   const [stats, setStats] = useState({ uploadsCount: 0, catalogCount: 0, recentUploads: [], userCatalogs: [] });
   const [loading, setLoading] = useState(true);
 
@@ -23,56 +23,171 @@ export default function Dashboard() {
   };
 
  const handleEdit = (id) => {
+  console.log("handleEdit called with ID:", id);
+  console.log("Available catalogs:", catalogs.map(c => ({ id: c._id, name: c.catalogName })));
+  
   const catalogToEdit = catalogs.find((c) => c._id === id);
-  if (!catalogToEdit) return;
+  console.log("Found catalog to edit:", catalogToEdit);
+  
+  if (!catalogToEdit) {
+    console.error("Catalog not found for ID:", id);
+    return;
+  }
+  
   setEditId(id);
   setShowModal(true);
   setOpenDropdownId(null); // close dropdown
+  
+  console.log("Edit modal should open with editId:", id);
 };
 
 
-  const handleDelete = (id) => {
-  if (confirm("Are you sure you want to delete this catalog?")) {
-    setCatalogs(catalogs.filter((c) => c._id !== id)); // use _id
-  }
-  setOpenDropdownId(null);
-};
+  const handleDelete = async (id) => {
+    if (confirm("Are you sure you want to delete this catalog?")) {
+      try {
+        const res = await fetch(`/api/catalog/${id}`, {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${localStorage.getItem("token")}`
+          },
+        });
 
+        if (!res.ok) {
+          throw new Error("Failed to delete catalog");
+        }
 
-  const handleSubmit = (catalogData) => {
-    if (editId !== null) {
-      setCatalogs(
-        catalogs.map((c) =>
-          c._id === editId ? { ...catalogData, _id: editId } : c
-        )
-      );
-    } else {
-      const newId =
-        (catalogs.length ? Math.max(...catalogs.map((c) => c.id)) : 0) + 1;
-      setCatalogs([...catalogs, { ...catalogData, id: newId }]);
+        toast.success('Catalog deleted successfully!');
+        // Refresh the catalog list from server
+        await fetchDashboardData();
+      } catch (error) {
+        console.error('Error deleting catalog:', error);
+        toast.error('Error deleting catalog');
+      }
     }
-    closeModal();
-  };
-  const handleDownload = (url, name) => {
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = name || "catalog.pdf";
-    a.click();
+    setOpenDropdownId(null);
   };
 
-  const handleCopyLink = (link) => {
-    navigator.clipboard.writeText(link);
-    toast.success("Link copied to clipboard!", {
-      icon: "🔗",
-      style: {
-        borderRadius: "12px",
-        background: "linear-gradient(to right, #6366f1, #8b5cf6)", // Indigo → Purple gradient
-        color: "#ffffff",
-        fontWeight: "500",
-        boxShadow: "0 4px 15px rgba(99, 102, 241, 0.3)", // soft indigo glow
-        padding: "12px 16px",
-      },
-    });
+
+  const handleSubmit = async (catalogData) => {
+    try {
+      // Since the CatalogModal already handles API calls, 
+      // we just need to refresh the catalog list from the server
+      await fetchDashboardData();
+      closeModal();
+      // Note: Success toast is already shown in CatalogModal
+    } catch (error) {
+      console.error('Error refreshing catalog list:', error);
+      toast.error('Error refreshing catalog list');
+    }
+  };
+
+  const fetchDashboardData = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/dashboard", {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${localStorage.getItem("token")}`
+        },
+      });
+
+      if (!res.ok) {
+        throw new Error("Failed to fetch dashboard data");
+      }
+
+      const data = await res.json();
+      console.log("Get response ", data)
+      setStats(data.stats || {});
+      setCatalogs(data.stats.userCatalogs || []);
+    } catch (err) {
+      console.error(err);
+      toast.error("Error loading dashboard data");
+    } finally {
+      setLoading(false);
+    }
+  };
+  const handleDownload = async (url, name) => {
+    try {
+      // Create a more robust download function
+      const response = await fetch(url);
+      const blob = await response.blob();
+      const downloadUrl = window.URL.createObjectURL(blob);
+      
+      const a = document.createElement("a");
+      a.href = downloadUrl;
+      a.download = name || "catalog.pdf";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      
+      // Clean up the blob URL
+      window.URL.revokeObjectURL(downloadUrl);
+      
+      toast.success("PDF downloaded successfully!", {
+        icon: "📥",
+        style: {
+          borderRadius: "12px",
+          background: "linear-gradient(to right, #10b981, #059669)",
+          color: "#ffffff",
+          fontWeight: "500",
+          boxShadow: "0 4px 15px rgba(16, 185, 129, 0.3)",
+          padding: "12px 16px",
+        },
+      });
+    } catch (error) {
+      console.error("Download failed:", error);
+      toast.error("Failed to download PDF", {
+        icon: "❌",
+        style: {
+          borderRadius: "12px",
+          background: "linear-gradient(to right, #ef4444, #dc2626)",
+          color: "#ffffff",
+          fontWeight: "500",
+          boxShadow: "0 4px 15px rgba(239, 68, 68, 0.3)",
+          padding: "12px 16px",
+        },
+      });
+    }
+  };
+
+  const handleCopyLink = async (link) => {
+    try {
+      await navigator.clipboard.writeText(link);
+      toast.success("PDF link copied to clipboard!", {
+        icon: "🔗",
+        style: {
+          borderRadius: "12px",
+          background: "linear-gradient(to right, #6366f1, #8b5cf6)",
+          color: "#ffffff",
+          fontWeight: "500",
+          boxShadow: "0 4px 15px rgba(99, 102, 241, 0.3)",
+          padding: "12px 16px",
+        },
+      });
+    } catch (error) {
+      console.error("Copy failed:", error);
+      // Fallback for older browsers
+      const textArea = document.createElement("textarea");
+      textArea.value = link;
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textArea);
+      
+      toast.success("PDF link copied to clipboard!", {
+        icon: "🔗",
+        style: {
+          borderRadius: "12px",
+          background: "linear-gradient(to right, #6366f1, #8b5cf6)",
+          color: "#ffffff",
+          fontWeight: "500",
+          boxShadow: "0 4px 15px rgba(99, 102, 241, 0.3)",
+          padding: "12px 16px",
+        },
+      });
+    }
   };
 
 
@@ -83,7 +198,12 @@ export default function Dashboard() {
 
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+      // Check if click is outside any dropdown
+      const isClickInsideAnyDropdown = Object.values(dropdownRefs.current).some(ref => 
+        ref && ref.contains(event.target)
+      );
+      
+      if (!isClickInsideAnyDropdown) {
         setOpenDropdownId(null);
       }
     };
@@ -93,35 +213,7 @@ export default function Dashboard() {
   }, []);
 
   useEffect(() => {
-    const fetchDashboard = async () => {
-      setLoading(true);
-      try {
-        const res = await fetch("/api/dashboard", {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            // Include auth header if your API requires JWT
-            "Authorization": `Bearer ${localStorage.getItem("token")}`
-          },
-        });
-
-        if (!res.ok) {
-          throw new Error("Failed to fetch dashboard data");
-        }
-
-        const data = await res.json();
-        console.log("Get response ", data)
-        setStats(data.stats || {});
-        setCatalogs(data.stats.userCatalogs || []);
-      } catch (err) {
-        console.error(err);
-        toast.error("Error loading dashboard data");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchDashboard();
+    fetchDashboardData();
   }, []);
  
 
@@ -187,16 +279,25 @@ export default function Dashboard() {
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {catalogs.map((catalog) => {
-                const name = (catalog?.catalogName ?? "").toString();
+              {catalogs.map((catalog, index) => {
+                console.log("catlog",catalog)
+                // Try multiple possible paths for filename
+                const name = catalog?.file?.filename || 
+                           catalog?.filename || 
+                           catalog?.title || 
+                           (catalog?.fileUrl ? catalog.fileUrl.split('/').pop().split('?')[0] : '') ||
+                           "Untitled PDF";
 
                 return (
                   <div
-                    key={catalog._id}
+                    key={catalog._id || `catalog-${index}`}
                     className="relative group bg-white/90 backdrop-blur-sm border border-gray-200 rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col h-80"
                   >
                     {/* Dropdown Menu */}
-                    <div className="absolute top-3 right-3 z-10" ref={dropdownRef}>
+                    <div 
+                      className="absolute top-3 right-3 z-10" 
+                      ref={el => dropdownRefs.current[catalog._id] = el}
+                    >
                       <button
                         onClick={() => toggleDropdown(catalog._id)}
                         className="p-2 rounded-full bg-white/80 backdrop-blur-sm text-gray-600 hover:text-indigo-600 hover:bg-white shadow-sm transition-all"
@@ -260,21 +361,24 @@ export default function Dashboard() {
                     <div className="relative p-3 flex-shrink-0">
                       {/* File Details - Normal State */}
                       <div className="group-hover:opacity-60 transition-all duration-300">
-                        {/* File Name Badge */}
-                        <div className="mb-2">
-                          <span className="inline-flex items-center text-xs text-indigo-600 bg-indigo-50 px-2 py-1 rounded-md font-medium border border-indigo-100">
-                            <svg className="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        {/* PDF Name - Primary Title */}
+                        <h3 className="inline-flex items-center text-xs text-indigo-600 bg-indigo-50 px-2 py-1 rounded-md font-medium border border-indigo-100">
+                          <svg className="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                             </svg>
-                            {name}
+                          {name}
+                        </h3>
+
+                        {/* Catalog Name - Secondary */}
+                        <div className="mb-2">
+                          <span className="text-sm font-semibold text-gray-800 mb-2 line-clamp-1 leading-tight">
+                            
+                            {catalog.catalogName || "No catalog name"}
                           </span>
                         </div>
 
-                        {/* Catalog Name */}
-                        <h3 className="text-sm font-semibold text-gray-800 mb-1 line-clamp-1 leading-tight">{catalog.name}</h3>
-
-                        {/* Description - More Compact */}
-                        <p className="text-xs text-gray-600 line-clamp-1">
+                        {/* Description */}
+                        <p className="text-xs text-gray-600 line-clamp-2">
                           {catalog.description || "No description available"}
                         </p>
                       </div>
@@ -283,7 +387,14 @@ export default function Dashboard() {
                       <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 bg-white/70 backdrop-blur-sm rounded-lg">
                         <div className="flex justify-center gap-3 transform translate-y-2 group-hover:translate-y-0 transition-transform duration-300">
                           <button
-                            onClick={() => window.open(catalog.preview, "_blank")}
+                            onClick={() => {
+                              console.log("Opening PDF:", catalog.fileUrl);
+                              if (catalog.fileUrl) {
+                                window.open(catalog.fileUrl, "_blank");
+                              } else {
+                                toast.error("PDF URL not available");
+                              }
+                            }}
                             className="flex flex-col items-center justify-center w-12 h-12 bg-white shadow-md rounded-lg hover:bg-indigo-50 text-indigo-600 transition-all duration-200 hover:scale-105 hover:shadow-lg border border-indigo-100"
                             title="View PDF"
                           >
@@ -294,7 +405,14 @@ export default function Dashboard() {
                           </button>
 
                           <button
-                            onClick={() => handleDownload(catalog.preview, catalog.name)}
+                            onClick={() => {
+                              console.log("Downloading PDF:", catalog.fileUrl, catalog.catalogName);
+                              if (catalog.fileUrl) {
+                                handleDownload(catalog.fileUrl, catalog.catalogName || 'catalog.pdf');
+                              } else {
+                                toast.error("PDF URL not available for download");
+                              }
+                            }}
                             className="flex flex-col items-center justify-center w-12 h-12 bg-white shadow-md rounded-lg hover:bg-green-50 text-green-600 transition-all duration-200 hover:scale-105 hover:shadow-lg border border-green-100"
                             title="Download PDF"
                           >
@@ -304,7 +422,14 @@ export default function Dashboard() {
                           </button>
 
                           <button
-                            onClick={() => handleCopyLink(catalog.preview)}
+                            onClick={() => {
+                              console.log("Copying PDF link:", catalog.fileUrl);
+                              if (catalog.fileUrl) {
+                                handleCopyLink(catalog.fileUrl);
+                              } else {
+                                toast.error("PDF URL not available for copying");
+                              }
+                            }}
                             className="flex flex-col items-center justify-center w-12 h-12 bg-white shadow-md rounded-lg hover:bg-purple-50 text-purple-600 transition-all duration-200 hover:scale-105 hover:shadow-lg border border-purple-100"
                             title="Copy Link"
                           >

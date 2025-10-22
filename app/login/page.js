@@ -31,6 +31,7 @@ export default function LoginPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }), // ✅ use state variables, not DOM nodes
       });
+       console.log("🔹 Raw Response:", res);
 
       const data = await res.json();
 
