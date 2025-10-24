@@ -99,8 +99,13 @@ export default function Dashboard() {
 
       const data = await res.json();
       console.log("Get response ", data)
-      setStats(data.stats || {});
-      setCatalogs(data.stats.userCatalogs || []);
+      const userCatalogs = data.stats?.userCatalogs || [];
+      setCatalogs(userCatalogs);
+      setStats({
+        ...data.stats,
+        catalogCount: userCatalogs.length
+      });
+
     } catch (err) {
       console.error(err);
       toast.error("Error loading dashboard data");
@@ -225,7 +230,7 @@ export default function Dashboard() {
 
       <div className="max-w-7xl mx-auto space-y-8">
         {/* Dashboard Header with Stats */}
-        {/* <div className="bg-white/70 backdrop-blur-lg border border-white/30 rounded-2xl shadow-md p-6">
+         <div className="bg-white/70 backdrop-blur-lg border border-white/30 rounded-2xl shadow-md p-6">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
             <div>
               <h1 className="text-3xl font-bold text-gray-800 mb-2">Dashboard</h1>
@@ -239,7 +244,7 @@ export default function Dashboard() {
 
             </div>
           </div>
-        </div> */}
+        </div> 
 
 
 

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server.js";
 import Catalog from "../../../models/Catalog.js";
+import File from "@/app/models/File.js";
 import { getUserFromRequest } from "../../../util/auth.js";
 import { connectToDB } from "../../../util/db.js";
 import mongoose from "mongoose";
@@ -41,7 +42,7 @@ export async function PUT(req, context) {
     }
 
     // Find a single catalog for this owner
-    const catalog = await Catalog.findOne({ _id: ownerObjectId });
+    const catalog = await File.findOne({ _id: ownerObjectId });
     if (!catalog) {
       return new Response(JSON.stringify({ error: "Catalog not found1",id:id }), { status: 404 });
     }
@@ -60,6 +61,7 @@ export async function PUT(req, context) {
     }
 
     const { title, description, file } = body;
+    console.log("body>>",body)
 
     // Update fields only if provided
     if (title) catalog.title = title;
