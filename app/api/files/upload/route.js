@@ -101,22 +101,44 @@ export async function POST(req) {
     );
     console.log("uploadResult",uploadResult)
 
-    //Save file metadata to MongoDB
-    const newFile = await File.create({
-      catalogName: fields.catalogName?.[0] || "Untitled Catalog",
-      description: fields.description?.[0] || "",
-      fileUrl: uploadResult.secure_url,
-      filename: uploadResult.original_filename,
-      owner: user._id,
-      size: uploadResult.bytes,
-      mimetype: uploadResult.format,
-      tags: fields.tags ? fields.tags[0].split(",") : [],
-      catalog: fields.catalog === "true",
-    });
+    //Save or update file metadata to MongoDB
+    let fileRecord;
+    const catalogId = fields.catalogId?.[0];
+    
+    if (catalogId) {
+      // Update existing file for catalog edit
+      fileRecord = await File.findOneAndUpdate(
+        { catalogId: catalogId },
+        {
+          catalogName: fields.catalogName?.[0] || "Untitled Catalog",
+          description: fields.description?.[0] || "",
+          fileUrl: uploadResult.secure_url,
+          filename: uploadResult.original_filename,
+          size: uploadResult.bytes,
+          mimetype: uploadResult.format,
+          tags: fields.tags ? fields.tags[0].split(",") : [],
+        },
+        { new: true, upsert: true }
+      );
+    } else {
+      // Create new file
+      fileRecord = await File.create({
+        catalogName: fields.catalogName?.[0] || "Untitled Catalog",
+        description: fields.description?.[0] || "",
+        fileUrl: uploadResult.secure_url,
+        filename: uploadResult.original_filename,
+        owner: user._id,
+        catalogId: catalogId || null,
+        size: uploadResult.bytes,
+        mimetype: uploadResult.format,
+        tags: fields.tags ? fields.tags[0].split(",") : [],
+        catalog: fields.catalog === "true",
+      });
+    }
 
     //Respond success
     return NextResponse.json(
-      { message: "File uploaded successfully!", file: newFile },
+      { message: "File uploaded successfully!", file: fileRecord },
       { status: 200 }
     );
   } catch (err) {

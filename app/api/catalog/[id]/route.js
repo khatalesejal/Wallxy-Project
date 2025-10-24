@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server.js";
 import Catalog from "../../../models/Catalog.js";
-import File from "@/app/models/File.js";
+import File from "../../../models/File.js";
 import { getUserFromRequest } from "../../../util/auth.js";
 import { connectToDB } from "../../../util/db.js";
 import mongoose from "mongoose";
@@ -42,7 +42,7 @@ export async function PUT(req, context) {
     }
 
     // Find a single catalog for this owner
-    const catalog = await File.findOne({ _id: ownerObjectId });
+    const catalog = await Catalog.findOne({ _id: ownerObjectId });
     if (!catalog) {
       return new Response(JSON.stringify({ error: "Catalog not found1",id:id }), { status: 404 });
     }
@@ -60,14 +60,34 @@ export async function PUT(req, context) {
       return new Response(JSON.stringify({ error: "Invalid JSON in request body" }), { status: 400 });
     }
 
-    const { title, description, file } = body;
-    console.log("body>>",body)
+    const { title, description, fileUrl } = body;
 
     // Update fields only if provided
     if (title) catalog.title = title;
-    if (description) catalog.description = description;
-    if (file && file.filename && file.fileUrl) {
-      catalog.file = { filename: file.filename, fileUrl: file.fileUrl };
+    if (description !== undefined) catalog.description = description;
+    
+    if (fileUrl) {
+      // Extract filename from fileUrl or use existing filename
+      const filename = fileUrl.split('/').pop() || catalog.file?.filename || 'document.pdf';
+      catalog.file = { filename: filename, fileUrl: fileUrl };
+    }
+    
+    // Always update the associated file record with name/description changes
+    const updateData = {};
+    if (title) updateData.catalogName = title;
+    if (description !== undefined) updateData.description = description;
+    if (fileUrl) {
+      updateData.fileUrl = fileUrl;
+      updateData.filename = fileUrl.split('/').pop() || catalog.file?.filename || 'document.pdf';
+    }
+    
+    // Update file record if there are changes to sync
+    if (Object.keys(updateData).length > 0) {
+      await File.findOneAndUpdate(
+        { catalogId: catalog._id },
+        updateData,
+        { upsert: false }
+      );
     }
 
     await catalog.save();

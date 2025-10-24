@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { connectToDB } from "@/app/util/db.js";
 import { getUserFromRequest } from "@/app/util/auth.js";
 import File from "@/app/models/File";
+import Catalog from "@/app/models/Catalog";
 
 export async function GET(req) {
   try {
@@ -16,18 +17,18 @@ export async function GET(req) {
 
     //Stats
     const uploadsCount = await File.countDocuments({ owner: user._id });
-    const catalogCount = await File.countDocuments({ owner: user._id, catalog: true });
+    const catalogCount = await Catalog.countDocuments({ owner: user._id });
 
-    //Recent uploads (latest 5 files)
+    //Recent uploads (latest 5 files) - still from File table
     const recentUploads = await File.find({ owner: user._id })
       .sort({ createdAt: -1 })
       .limit(5)
       .select("catalogName fileUrl createdAt");
 
-    //Catalogs created by user
-    const userCatalogs = await File.find({ owner: user._id })
+    //Catalogs created by user - now from Catalog table with file data
+    const userCatalogs = await Catalog.find({ owner: user._id })
       .sort({ createdAt: -1 })
-      .select("catalogName fileUrl createdAt description tags");
+      .select("title description file createdAt");
       console.log("user catalogs ",userCatalogs)
 
     // Response

@@ -16,6 +16,7 @@ export default function CatalogModal({
     file: null,
     preview: '',
     fileUrl: '',
+    existingFileName: '',
   });
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
@@ -33,11 +34,12 @@ export default function CatalogModal({
         description: editCatalog.description || '',
         file: null, 
         preview: '',
-        fileUrl: editCatalog.fileUrl || '' 
+        fileUrl: editCatalog.fileUrl || editCatalog.file?.fileUrl || '',
+        existingFileName: editCatalog.file?.filename || editCatalog.filename || 'Current file'
       });
     } else {
       console.log("Setting up create mode");
-      setCatalog({ name: '', description: '', file: null, preview: '', fileUrl: '' });
+      setCatalog({ name: '', description: '', file: null, preview: '', fileUrl: '', existingFileName: '' });
     }
   }, [editCatalog]);
 
@@ -92,11 +94,7 @@ export default function CatalogModal({
       return;
     }
     
-    // For editing, if no new file is selected, we'll use existing fileUrl
-    if (editCatalog && !catalog.file && !catalog.fileUrl) {
-      toast.error('Please upload a PDF file');
-      return;
-    }
+    // For editing, file is optional - we can just update name/description
 
     setLoading(true);
     
@@ -112,6 +110,11 @@ export default function CatalogModal({
         formData.append('catalogName', catalog.name);
         formData.append('description', catalog.description || '');
         formData.append('catalog', 'true');
+        
+        // If editing, pass catalogId to update existing file
+        if (editCatalog && editCatalog._id) {
+          formData.append('catalogId', editCatalog._id);
+        }
 
         console.log('FormData prepared, sending to /api/files/upload');
 
@@ -151,7 +154,7 @@ export default function CatalogModal({
         console.log('File URL extracted:', fileUrl);
       }
 
-      // Now create or update the catalog
+      
       let catalogResponse;
       
       if (editCatalog) {
@@ -200,7 +203,7 @@ export default function CatalogModal({
       onSubmit(catalogData);
       
       // Reset form
-      setCatalog({ name: '', description: '', file: null, preview: '', fileUrl: '' });
+      setCatalog({ name: '', description: '', file: null, preview: '', fileUrl: '', existingFileName: '' });
       
     } catch (error) {
       console.error('Error:', error);
@@ -286,7 +289,7 @@ export default function CatalogModal({
               />
               {editCatalog && !catalog.file && (
                 <p className="mt-2 text-xs text-gray-500">
-                  Current file: {editCatalog.catalogName || 'Existing PDF'}
+                  Current file: <span className="font-medium text-gray-700">{catalog.existingFileName}</span>
                 </p>
               )}
             </div>

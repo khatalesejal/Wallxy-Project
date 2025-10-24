@@ -3,18 +3,20 @@
 import { useState, useRef, useEffect } from "react";
 import Navbar from "../components/Navbar";
 import CatalogModal from "../components/CatalogModal";
+import DeleteModal from "../components/DeleteModal";
 import toast, { Toaster } from "react-hot-toast";
 
 export default function Dashboard() {
   const [showModal, setShowModal] = useState(false);
   const [catalogs, setCatalogs] = useState([]);
   const [editId, setEditId] = useState(null);
+  const [deleteId, setDeleteId] = useState(null);
   const [openDropdownId, setOpenDropdownId] = useState(null);
   const [viewMode, setViewMode] = useState("grid"); 
   const dropdownRefs = useRef({});
   const [stats, setStats] = useState({ uploadsCount: 0, catalogCount: 0, recentUploads: [], userCatalogs: [] });
   const [loading, setLoading] = useState(true);
-
+  const [searchQuery, setSearchQuery] = useState('');
 
   const openModal = () => setShowModal(true);
   const closeModal = () => {
@@ -24,7 +26,7 @@ export default function Dashboard() {
 
  const handleEdit = (id) => {
   console.log("handleEdit called with ID:", id);
-  console.log("Available catalogs:", catalogs.map(c => ({ id: c._id, name: c.catalogName })));
+  console.log("Available catalogs:", catalogs.map(c => ({ id: c._id, name: c.title })));
   
   const catalogToEdit = catalogs.find((c) => c._id === id);
   console.log("Found catalog to edit:", catalogToEdit);
@@ -42,10 +44,10 @@ export default function Dashboard() {
 };
 
 
-  const handleDelete = async (id) => {
-    if (confirm("Are you sure you want to delete this catalog?")) {
+  const handleDelete = async () => {
+  
       try {
-        const res = await fetch(`/api/catalog/${id}`, {
+        const res = await fetch(`/api/catalog/${deleteId}`, {
           method: "DELETE",
           headers: {
             "Content-Type": "application/json",
@@ -63,9 +65,12 @@ export default function Dashboard() {
       } catch (error) {
         console.error('Error deleting catalog:', error);
         toast.error('Error deleting catalog');
-      }
+      }finally {
+      setDeleteId(null);
+      setOpenDropdownId(null);
     }
-    setOpenDropdownId(null);
+    
+   
   };
 
 
@@ -105,7 +110,6 @@ export default function Dashboard() {
         ...data.stats,
         catalogCount: userCatalogs.length
       });
-
     } catch (err) {
       console.error(err);
       toast.error("Error loading dashboard data");
@@ -228,9 +232,9 @@ export default function Dashboard() {
       <Navbar />
       <Toaster position="bottom-right" reverseOrder={false} />
 
-      <div className="max-w-7xl mx-auto space-y-8">
+      <div className="max-w-7xl mx-auto space-y-5">
         {/* Dashboard Header with Stats */}
-         <div className="bg-white/70 backdrop-blur-lg border border-white/30 rounded-2xl shadow-md p-6">
+        <div className="bg-white/70 backdrop-blur-lg border border-white/30 rounded-2xl shadow-md p-6">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
             <div>
               <h1 className="text-3xl font-bold text-gray-800 mb-2">Dashboard</h1>
@@ -244,9 +248,63 @@ export default function Dashboard() {
 
             </div>
           </div>
-        </div> 
+        </div>
 
-
+        {/* Search Bar */}
+        <div className="mb-8 max-w-2xl mx-auto px-4 sm:px-0">
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+              <svg 
+                className="h-5 w-5 text-indigo-500" 
+                fill="none" 
+                viewBox="0 0 24 24" 
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path 
+                  strokeLinecap="round" 
+                  strokeLinejoin="round" 
+                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" 
+                />
+              </svg>
+            </div>
+            <input
+              type="text"
+              className={`block w-full pl-12 pr-10 py-3.5 bg-white/90 text-gray-800 placeholder-indigo-300/80 rounded-xl shadow-sm 
+                border-2 border-transparent 
+                focus:border-indigo-400 focus:ring-0 focus:ring-offset-0
+                transition-all duration-200 text-base outline-none
+                ${searchQuery ? 'border-indigo-300' : 'border-transparent hover:border-indigo-200'}`}
+              placeholder="Search by title..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              style={{
+                boxShadow: '0 4px 20px -5px rgba(99, 102, 241, 0.15)'
+              }}
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="absolute inset-y-0 right-0 pr-4 flex items-center text-indigo-400 hover:text-indigo-600 transition-colors"
+                aria-label="Clear search"
+              >
+                <svg 
+                  className="h-5 w-5" 
+                  fill="none" 
+                  viewBox="0 0 24 24" 
+                  stroke="currentColor"
+                  strokeWidth={1.5}
+                >
+                  <path 
+                    strokeLinecap="round" 
+                    strokeLinejoin="round" 
+                    d="M6 18L18 6M6 6l12 12" 
+                  />
+                </svg>
+              </button>
+            )}
+          </div>
+        </div>
 
         {/* Catalogs Section */}
         <div className="bg-white/70 backdrop-blur-lg border border-white/30 rounded-2xl shadow-md p-6">
@@ -284,19 +342,21 @@ export default function Dashboard() {
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {catalogs.map((catalog, index) => {
+              {catalogs
+                .filter(catalog => 
+                  searchQuery === '' || 
+                  catalog.title?.toLowerCase().includes(searchQuery.toLowerCase()) 
+                )
+                .map((catalog, index) => {
                 console.log("catlog",catalog)
                 // Try multiple possible paths for filename
-                const name = catalog?.file?.filename || 
-                           catalog?.filename || 
-                           catalog?.title || 
-                           (catalog?.fileUrl ? catalog.fileUrl.split('/').pop().split('?')[0] : '') ||
-                           "Untitled PDF";
-
+               const pdfFileName = catalog?.file?.filename || "Untitled PDF";
+                
+                
                 return (
                   <div
                     key={catalog._id || `catalog-${index}`}
-                    className="relative group bg-white/90 backdrop-blur-sm border border-gray-200 rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col h-80"
+                    className="group relative bg-white/90 backdrop-blur-sm border border-gray-200 rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col h-80 animate-fade-in"
                   >
                     {/* Dropdown Menu */}
                     <div 
@@ -322,7 +382,7 @@ export default function Dashboard() {
                           </button>
                           <button
                             className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-red-50 hover:text-red-600 rounded-b-lg"
-                            onClick={() => handleDelete(catalog._id)}
+                            onClick={() => setDeleteId(catalog._id)}
                           >
                             Delete
                           </button>
@@ -333,10 +393,10 @@ export default function Dashboard() {
                     {/* PDF Preview - Full Card Coverage */}
                     {/* inside your map for each catalog */}
                     <div className="relative flex-1 w-full bg-gradient-to-br from-gray-50 to-gray-100" style={{ minHeight: 180 }}>
-                      {catalog.fileUrl && /\.pdf$/i.test(catalog.fileUrl) ? (
+                      {catalog.file?.fileUrl && /\.pdf$/i.test(catalog.file.fileUrl) ? (
                         <iframe
-                          src={catalog.fileUrl + "#toolbar=0&navpanes=0&view=FitH"}
-                          title={catalog.catalogName || "PDF Preview"}
+                          src={catalog.file.fileUrl + "#toolbar=0&navpanes=0&view=FitH"}
+                          title={catalog.title || "PDF Preview"}
                           className="w-full h-full"
                           style={{
                             border: 'none',
@@ -351,7 +411,7 @@ export default function Dashboard() {
                           scrolling="yes"
                           // helpful error handler
                           onError={(e) => {
-                            console.error("Iframe load failed for", catalog.fileUrl, e);
+                            console.error("Iframe load failed for", catalog.file?.fileUrl, e);
                           }}
                         />
                       ) : (
@@ -371,14 +431,14 @@ export default function Dashboard() {
                           <svg className="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                             </svg>
-                          {name}
+                          {pdfFileName}
                         </h3>
 
                         {/* Catalog Name - Secondary */}
                         <div className="mb-2">
                           <span className="text-sm font-semibold text-gray-800 mb-2 line-clamp-1 leading-tight">
                             
-                            {catalog.catalogName || "No catalog name"}
+                            {catalog.title || "No catalog name"}
                           </span>
                         </div>
 
@@ -393,9 +453,9 @@ export default function Dashboard() {
                         <div className="flex justify-center gap-3 transform translate-y-2 group-hover:translate-y-0 transition-transform duration-300">
                           <button
                             onClick={() => {
-                              console.log("Opening PDF:", catalog.fileUrl);
-                              if (catalog.fileUrl) {
-                                window.open(catalog.fileUrl, "_blank");
+                              console.log("Opening PDF:", catalog.file?.fileUrl);
+                              if (catalog.file?.fileUrl) {
+                                window.open(catalog.file.fileUrl, "_blank");
                               } else {
                                 toast.error("PDF URL not available");
                               }
@@ -411,12 +471,14 @@ export default function Dashboard() {
 
                           <button
                             onClick={() => {
-                              console.log("Downloading PDF:", catalog.fileUrl, catalog.catalogName);
-                              if (catalog.fileUrl) {
-                                handleDownload(catalog.fileUrl, catalog.catalogName || 'catalog.pdf');
+                              // console.log("Downloading PDF:", catalog.fileUrl, catalog.catalogName);
+                              const pdfUrl = catalog.file?.fileUrl || catalog.fileUrl;
+                              if (pdfUrl) {
+                               handleDownload(pdfUrl, pdfFileName || 'catalog.pdf');
                               } else {
-                                toast.error("PDF URL not available for download");
+                               toast.error("PDF URL not available for download");
                               }
+
                             }}
                             className="flex flex-col items-center justify-center w-12 h-12 bg-white shadow-md rounded-lg hover:bg-green-50 text-green-600 transition-all duration-200 hover:scale-105 hover:shadow-lg border border-green-100"
                             title="Download PDF"
@@ -429,11 +491,13 @@ export default function Dashboard() {
                           <button
                             onClick={() => {
                               console.log("Copying PDF link:", catalog.fileUrl);
-                              if (catalog.fileUrl) {
-                                handleCopyLink(catalog.fileUrl);
-                              } else {
-                                toast.error("PDF URL not available for copying");
-                              }
+                              const pdfUrl = catalog.file?.fileUrl || catalog.fileUrl;
+                            if (pdfUrl) {
+                              handleCopyLink(pdfUrl);
+                            } else {
+                              toast.error("PDF URL not available for copying");
+                            }
+
                             }}
                             className="flex flex-col items-center justify-center w-12 h-12 bg-white shadow-md rounded-lg hover:bg-purple-50 text-purple-600 transition-all duration-200 hover:scale-105 hover:shadow-lg border border-purple-100"
                             title="Copy Link"
@@ -487,6 +551,11 @@ export default function Dashboard() {
         onClose={closeModal}
         onSubmit={handleSubmit}
        editCatalog={editId ? catalogs.find((c) => c._id === editId) : null}
+      />
+       <DeleteModal
+        show={!!deleteId}
+        onClose={() => setDeleteId(null)}
+        onConfirm={handleDelete}
       />
     </div>
   );
