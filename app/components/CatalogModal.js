@@ -169,8 +169,8 @@ export default function CatalogModal({
           body: JSON.stringify({
             title: catalog.name,
             description: catalog.description || '',
-            fileUrl: fileUrl
-            
+            fileUrl: fileUrl,
+            filename: catalog.file ? catalog.file.name : (editCatalog?.file?.filename || 'document.pdf')
           })
         });
       } else {

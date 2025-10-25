@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import Navbar from "../components/Navbar";
 import CatalogModal from "../components/CatalogModal";
 import DeleteModal from "../components/DeleteModal";
+import ShareModal from "../components/ShareModal";
 import toast, { Toaster } from "react-hot-toast";
 
 export default function Dashboard() {
@@ -11,6 +12,7 @@ export default function Dashboard() {
   const [catalogs, setCatalogs] = useState([]);
   const [editId, setEditId] = useState(null);
   const [deleteId, setDeleteId] = useState(null);
+  const [shareCatalog, setShareCatalog] = useState(null);
   const [openDropdownId, setOpenDropdownId] = useState(null);
   const [viewMode, setViewMode] = useState("grid"); 
   const dropdownRefs = useRef({});
@@ -160,6 +162,10 @@ export default function Dashboard() {
       });
     }
   };
+
+  // const handleShare = (catalog) => {
+  //   setShareCatalog(catalog);
+  // };
 
   const handleCopyLink = async (link) => {
     try {
@@ -492,12 +498,11 @@ export default function Dashboard() {
                             onClick={() => {
                               console.log("Copying PDF link:", catalog.fileUrl);
                               const pdfUrl = catalog.file?.fileUrl || catalog.fileUrl;
-                            if (pdfUrl) {
-                              handleCopyLink(pdfUrl);
-                            } else {
-                              toast.error("PDF URL not available for copying");
-                            }
-
+                              if (pdfUrl) {
+                                handleCopyLink(pdfUrl);
+                              } else {
+                                toast.error("PDF URL not available for copying");
+                              }
                             }}
                             className="flex flex-col items-center justify-center w-12 h-12 bg-white shadow-md rounded-lg hover:bg-purple-50 text-purple-600 transition-all duration-200 hover:scale-105 hover:shadow-lg border border-purple-100"
                             title="Copy Link"
@@ -506,6 +511,16 @@ export default function Dashboard() {
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-2 10h2a2 2 0 002-2v-8a2 2 0 00-2-2h-2m-8 8h8" />
                             </svg>
                           </button>
+
+                          {/* <button
+                            onClick={() => handleShare(catalog)}
+                            className="flex flex-col items-center justify-center w-12 h-12 bg-white shadow-md rounded-lg hover:bg-blue-50 text-blue-600 transition-all duration-200 hover:scale-105 hover:shadow-lg border border-blue-100"
+                            title="Share"
+                          >
+                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                            </svg>
+                          </button> */}
                         </div>
                       </div>
                     </div>
@@ -557,6 +572,13 @@ export default function Dashboard() {
         onClose={() => setDeleteId(null)}
         onConfirm={handleDelete}
       />
+
+      {/*<ShareModal
+        show={!!shareCatalog}
+        onClose={() => setShareCatalog(null)}
+        catalogId={shareCatalog?._id}
+        catalogData={shareCatalog}
+      />*/}
     </div>
   );
 }

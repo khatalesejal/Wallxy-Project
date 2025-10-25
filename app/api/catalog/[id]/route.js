@@ -60,25 +60,32 @@ export async function PUT(req, context) {
       return new Response(JSON.stringify({ error: "Invalid JSON in request body" }), { status: 400 });
     }
 
-    const { title, description, fileUrl } = body;
+    const { title, description, fileUrl, filename: newFilename } = body;
 
     // Update fields only if provided
     if (title) catalog.title = title;
     if (description !== undefined) catalog.description = description;
     
     if (fileUrl) {
-      // Extract filename from fileUrl or use existing filename
-      const filename = fileUrl.split('/').pop() || catalog.file?.filename || 'document.pdf';
-      catalog.file = { filename: filename, fileUrl: fileUrl };
+      // Preserve the original filename if it exists and no new filename is provided
+      // Otherwise, use the new filename or extract from URL as fallback
+      const filename = newFilename || catalog.file?.filename || fileUrl.split('/').pop() || 'document.pdf';
+      catalog.file = { 
+        filename: filename,
+        fileUrl: fileUrl 
+      };
     }
     
     // Always update the associated file record with name/description changes
     const updateData = {};
     if (title) updateData.catalogName = title;
     if (description !== undefined) updateData.description = description;
+    
+    // Only update fileUrl and filename if a new file is provided
     if (fileUrl) {
       updateData.fileUrl = fileUrl;
-      updateData.filename = fileUrl.split('/').pop() || catalog.file?.filename || 'document.pdf';
+      // Preserve the original filename if it exists and no new filename is provided
+      updateData.filename = newFilename || catalog.file?.filename || fileUrl.split('/').pop() || 'document.pdf';
     }
     
     // Update file record if there are changes to sync
