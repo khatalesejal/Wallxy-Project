@@ -19,7 +19,7 @@ export async function GET(req, context) {
 
     return new Response(
       JSON.stringify({
-        shareLink: `${process.env.NEXT_PUBLIC_BASE_URL}/catalog/view/${catalog._id}`,
+        shareLink: `${process.env.BASE_URL}/catalog/view/${catalog._id}`,
         catalog,
       }),
       { status: 200 }

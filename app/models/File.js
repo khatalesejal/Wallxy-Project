@@ -7,6 +7,7 @@ const FileSchema = new mongoose.Schema({
     fileUrl: { type: String, required: true },
   filename: { type: String, required: true },
   owner: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+  catalogId: { type: mongoose.Schema.Types.ObjectId, ref: "Catalog" },
   size: { type: Number },
   mimetype: { type: String },
   tags: { type: [String], default: [] },

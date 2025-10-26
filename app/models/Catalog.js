@@ -13,4 +13,3 @@ const CatalogSchema = new mongoose.Schema({
 
 const Catalog = mongoose.models.Catalog || mongoose.model("Catalog", CatalogSchema);
 export default Catalog;
-

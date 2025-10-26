@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server.js";
 import Catalog from "../../../models/Catalog.js";
+import File from "../../../models/File.js";
 import { getUserFromRequest } from "../../../util/auth.js";
 import { connectToDB } from "../../../util/db.js";
 import mongoose from "mongoose";
@@ -28,6 +29,9 @@ export async function GET(req, context) {
 export async function PUT(req, context) {
   try {
     await connectToDB();
+    console.log("req1>>>>",req)
+    console.log("req3>>>>",context)
+
 
     const { id } = context.params; // owner ID from URL
     const ownerObjectId = new mongoose.Types.ObjectId(id); // convert string to ObjectId
@@ -38,9 +42,9 @@ export async function PUT(req, context) {
     }
 
     // Find a single catalog for this owner
-    const catalog = await Catalog.findOne({ owner: ownerObjectId });
+    const catalog = await Catalog.findOne({ _id: ownerObjectId });
     if (!catalog) {
-      return new Response(JSON.stringify({ error: "Catalog not found" }), { status: 404 });
+      return new Response(JSON.stringify({ error: "Catalog not found1",id:id }), { status: 404 });
     }
 
     // Check ownership
@@ -56,13 +60,41 @@ export async function PUT(req, context) {
       return new Response(JSON.stringify({ error: "Invalid JSON in request body" }), { status: 400 });
     }
 
-    const { title, description, file } = body;
+    const { title, description, fileUrl, filename: newFilename } = body;
 
     // Update fields only if provided
     if (title) catalog.title = title;
-    if (description) catalog.description = description;
-    if (file && file.filename && file.fileUrl) {
-      catalog.file = { filename: file.filename, fileUrl: file.fileUrl };
+    if (description !== undefined) catalog.description = description;
+    
+    if (fileUrl) {
+      // Preserve the original filename if it exists and no new filename is provided
+      // Otherwise, use the new filename or extract from URL as fallback
+      const filename = newFilename || catalog.file?.filename || fileUrl.split('/').pop() || 'document.pdf';
+      catalog.file = { 
+        filename: filename,
+        fileUrl: fileUrl 
+      };
+    }
+    
+    // Always update the associated file record with name/description changes
+    const updateData = {};
+    if (title) updateData.catalogName = title;
+    if (description !== undefined) updateData.description = description;
+    
+    // Only update fileUrl and filename if a new file is provided
+    if (fileUrl) {
+      updateData.fileUrl = fileUrl;
+      // Preserve the original filename if it exists and no new filename is provided
+      updateData.filename = newFilename || catalog.file?.filename || fileUrl.split('/').pop() || 'document.pdf';
+    }
+    
+    // Update file record if there are changes to sync
+    if (Object.keys(updateData).length > 0) {
+      await File.findOneAndUpdate(
+        { catalogId: catalog._id },
+        updateData,
+        { upsert: false }
+      );
     }
 
     await catalog.save();

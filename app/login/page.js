@@ -8,9 +8,30 @@ import toast, { Toaster } from "react-hot-toast";
 
 export default function LoginPage() {
    const router = useRouter();
- const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
+   const [email, setEmail] = useState("");
+   const [password, setPassword] = useState("");
+   const [loading, setLoading] = useState(false);
+   const [errors, setErrors] = useState({});
+  
+   const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+
+  const validate = () => {
+    const newErrors = {};
+    if (!email.trim()) {
+      newErrors.email = "Email is required";
+    } else if (!isValidEmail(email)) {
+      newErrors.email = "Enter a valid email address";
+    }
+
+   if (!password.trim()) {
+      newErrors.password = "Password is required";
+    } else if (password.length !== 8) {
+      newErrors.password = "Password must be exactly 8 characters";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
 
   const handleChange = (e) => {
@@ -23,19 +44,23 @@ export default function LoginPage() {
 
  const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!validate()) return;
+
     setLoading(true);
 
     try {
       const res = await fetch("/api/user/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }), // ✅ use state variables, not DOM nodes
+        body: JSON.stringify({ email, password }), 
       });
+       
 
       const data = await res.json();
 
       if (!res.ok) {
         toast.error(data.error || "Login failed");
+         setErrors(prev => ({ ...prev, backend: data.error || "Invalid email or password" }));
       } else {
         // Save token and user info
         localStorage.setItem("token", data.token);
@@ -82,16 +107,23 @@ export default function LoginPage() {
                 Email Address
               </label>
               <input
-                type="email"
+                type="text"
                 id="email"
                 name="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  if (errors.email) setErrors({ ...errors, email: "" });
+                }}
                 placeholder="Enter your email"
                
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition outline-none"
-                
+                className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 transition outline-none ${
+                  errors.email
+                    ? "border-red-500 focus:ring-red-400"
+                    : "border-gray-300 focus:ring-blue-500 focus:border-blue-500"
+                }`}
               />
+              {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
             </div>
 
             <div>
@@ -108,13 +140,20 @@ export default function LoginPage() {
                 id="password"
                 name="password"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  if (errors.password) setErrors({ ...errors, password: "" });
+                }}
                 placeholder="Enter your password"
-                
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition outline-none"
+                className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 transition outline-none ${
+                  errors.password
+                    ? "border-red-500 focus:ring-red-400"
+                    : "border-gray-300 focus:ring-blue-500 focus:border-blue-500"
+                }`}
                 maxLength={8}
-                
               />
+              {errors.password && <p className="text-red-500 text-sm mt-1">{errors.password}</p>}
+              {errors.backend && <p className="text-red-500 text-sm mt-2 ">{errors.backend}</p>}
             </div>
 
             <button

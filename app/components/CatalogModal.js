@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -17,28 +16,37 @@ export default function CatalogModal({
     file: null,
     preview: '',
     fileUrl: '',
+    existingFileName: '',
   });
   const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState({});
+
 
 
   useEffect(() => {
+    console.log("CatalogModal useEffect - editCatalog:", editCatalog);
+    
     if (editCatalog) {
+      console.log("Setting up edit mode with catalog:", editCatalog);
       // Map the editCatalog data to our form structure
       setCatalog({
         name: editCatalog.catalogName || editCatalog.title || '',
         description: editCatalog.description || '',
-        file: null, // No file selected initially for editing
+        file: null, 
         preview: '',
-        fileUrl: editCatalog.fileUrl || '' // Store existing fileUrl
+        fileUrl: editCatalog.fileUrl || editCatalog.file?.fileUrl || '',
+        existingFileName: editCatalog.file?.filename || editCatalog.filename || 'Current file'
       });
     } else {
-      setCatalog({ name: '', description: '', file: null, preview: '', fileUrl: '' });
+      console.log("Setting up create mode");
+      setCatalog({ name: '', description: '', file: null, preview: '', fileUrl: '', existingFileName: '' });
     }
   }, [editCatalog]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setCatalog((prev) => ({ ...prev, [name]: value }));
+    setErrors((prev) => ({ ...prev, [name]: '' }));
   };
 
   // const handleFileChange = (e) => {
@@ -72,10 +80,13 @@ export default function CatalogModal({
     e.preventDefault();
     
     // Validation
-    if (!catalog.name.trim()) {
-      toast.error('Please enter a catalog name');
-      return;
-    }
+   if (!catalog.name.trim()) {
+    setErrors({ name: 'Catalog name is required' });
+     return;
+  } else {
+  setErrors({}); 
+}
+
     
     // For new catalogs, file is required
     if (!editCatalog && !catalog.file) {
@@ -83,11 +94,7 @@ export default function CatalogModal({
       return;
     }
     
-    // For editing, if no new file is selected, we'll use existing fileUrl
-    if (editCatalog && !catalog.file && !catalog.fileUrl) {
-      toast.error('Please upload a PDF file');
-      return;
-    }
+    // For editing, file is optional - we can just update name/description
 
     setLoading(true);
     
@@ -96,11 +103,20 @@ export default function CatalogModal({
       
       // If a new file is selected, upload it first
       if (catalog.file) {
+        console.log('Uploading file:', catalog.file.name);
+        
         const formData = new FormData();
         formData.append('file', catalog.file);
         formData.append('catalogName', catalog.name);
         formData.append('description', catalog.description || '');
         formData.append('catalog', 'true');
+        
+        // If editing, pass catalogId to update existing file
+        if (editCatalog && editCatalog._id) {
+          formData.append('catalogId', editCatalog._id);
+        }
+
+        console.log('FormData prepared, sending to /api/files/upload');
 
         const uploadResponse = await fetch('/api/files/upload', {
           method: 'POST',
@@ -110,20 +126,40 @@ export default function CatalogModal({
           body: formData
         });
 
+        console.log('Upload response status:', uploadResponse.status);
+
         if (!uploadResponse.ok) {
-          const errorData = await uploadResponse.json();
-          throw new Error(errorData.error || 'File upload failed');
+          const errorText = await uploadResponse.text();
+          console.error('Upload failed with response:', errorText);
+          let errorData;
+          try {
+            errorData = JSON.parse(errorText);
+          } catch (e) {
+            console.error('Failed to parse error response as JSON:', e);
+            throw new Error(`Upload failed with status ${uploadResponse.status}: ${errorText}`);
+          }
+          throw new Error(errorData.error || errorData.details || 'File upload failed');
         }
 
         const uploadData = await uploadResponse.json();
+        console.log('Upload successful, response:', uploadData);
+        
+        // The upload API returns the file data in uploadData.file
+        if (!uploadData.file || !uploadData.file.fileUrl) {
+          console.error('Invalid upload response structure:', uploadData);
+          throw new Error('Upload response missing file URL');
+        }
+        
         fileUrl = uploadData.file.fileUrl;
+        console.log('File URL extracted:', fileUrl);
       }
 
-      // Now create or update the catalog
+      
       let catalogResponse;
       
       if (editCatalog) {
         // Update existing catalog
+        console.log("id", editCatalog._id)
         catalogResponse = await fetch(`/api/catalog/${editCatalog._id}`, {
           method: 'PUT',
           headers: {
@@ -133,8 +169,8 @@ export default function CatalogModal({
           body: JSON.stringify({
             title: catalog.name,
             description: catalog.description || '',
-            fileUrl: fileUrl
-            
+            fileUrl: fileUrl,
+            filename: catalog.file ? catalog.file.name : (editCatalog?.file?.filename || 'document.pdf')
           })
         });
       } else {
@@ -167,7 +203,7 @@ export default function CatalogModal({
       onSubmit(catalogData);
       
       // Reset form
-      setCatalog({ name: '', description: '', file: null, preview: '', fileUrl: '' });
+      setCatalog({ name: '', description: '', file: null, preview: '', fileUrl: '', existingFileName: '' });
       
     } catch (error) {
       console.error('Error:', error);
@@ -219,8 +255,11 @@ export default function CatalogModal({
                 onChange={handleInputChange}
                 className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
                 placeholder="Name"
-                required
+                
               />
+              {errors.name && (
+              <p className="text-sm text-red-500 mt-1">{errors.name}</p>
+            )}
             </div>
 
             <div>
@@ -250,7 +289,7 @@ export default function CatalogModal({
               />
               {editCatalog && !catalog.file && (
                 <p className="mt-2 text-xs text-gray-500">
-                  Current file: {editCatalog.catalogName || 'Existing PDF'}
+                  Current file: <span className="font-medium text-gray-700">{catalog.existingFileName}</span>
                 </p>
               )}
             </div>

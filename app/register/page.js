@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';;
+import { useRouter } from 'next/navigation';
+import toast, { ToastBar, Toaster } from 'react-hot-toast';
 
 export default function SignupPage() {
   const router = useRouter();
@@ -12,6 +13,7 @@ export default function SignupPage() {
     password: '',
     confirmPassword: ''
   });
+   const [errors, setErrors] = useState({});
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -19,10 +21,28 @@ export default function SignupPage() {
       ...prev,
       [name]: value
     }));
+    setErrors((prev) => ({ ...prev, [name]: '' }));
+  };
+    const validate = () => {
+    const newErrors = {};
+
+    if (!formData.name.trim()) newErrors.name = 'Name is required';
+
+    if (!formData.email) newErrors.email = 'Email is required';
+    else if (!/\S+@\S+\.\S+/.test(formData.email))
+      newErrors.email = 'Invalid email format';
+
+    if (!formData.password) newErrors.password = 'Password is required';
+    else if (formData.password.length < 8)
+      newErrors.password = 'Password must be at least 8 characters';
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async (e) => {
   e.preventDefault();
+  if (!validate()) return;
 
   try {
     const res = await fetch('/api/user/register', {
@@ -40,13 +60,12 @@ export default function SignupPage() {
     const data = await res.json();
 
     if (!res.ok) {
-      alert(data.error || 'Something went wrong');
+      setErrors({ general: data.error || 'Something went wrong' });
       return;
     }
 
-    // Success
-    alert('Account created successfully!');
-     router.push('/dashboard');
+    toast.success('Account created successfully!');
+    setTimeout(()=>router.push('/'),1000) ;
     
   } catch (err) {
     console.error('Signup error:', err);
@@ -57,6 +76,7 @@ export default function SignupPage() {
 
   return (
     <div className="min-h-screen flex flex-col md:flex-row">
+      <Toaster position="top-center" reverseOrder={false} />
       {/* Left Side (Brand/Illustration) */}
       <div className="hidden md:flex w-full md:w-1/2 bg-gradient-to-br from-indigo-500 to-blue-600 text-white items-center justify-center p-12">
         <div className="max-w-md text-center">
@@ -93,9 +113,13 @@ export default function SignupPage() {
                 value={formData.name}
                 placeholder="Enter username"
                 onChange={handleChange}
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition outline-none"
-                
+                className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 outline-none transition ${
+                  errors.name
+                    ? 'border-red-500 focus:ring-red-400'
+                    : 'border-gray-300 focus:ring-indigo-500 focus:border-indigo-500'
+                }`}
               />
+              {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
             </div>
 
          
@@ -110,9 +134,13 @@ export default function SignupPage() {
                 value={formData.email}
                 placeholder="Enter email"
                 onChange={handleChange}
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition outline-none"
-                
+                className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 outline-none transition ${
+                  errors.email
+                    ? 'border-red-500 focus:ring-red-400'
+                    : 'border-gray-300 focus:ring-indigo-500 focus:border-indigo-500'
+                }`}
               />
+              {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
             </div>
 
            
@@ -127,10 +155,17 @@ export default function SignupPage() {
                 value={formData.password}
                 placeholder="Enter password"
                 onChange={handleChange}
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition outline-none"
+                className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 outline-none transition ${
+                  errors.password
+                    ? 'border-red-500 focus:ring-red-400'
+                    : 'border-gray-300 focus:ring-indigo-500 focus:border-indigo-500'
+                }`}
                 maxLength={8}
-                
               />
+              {errors.password && <p className="text-red-500 text-sm mt-1">{errors.password}</p>}
+              {errors.general && (
+              <p className="text-red-600  text-sm">{errors.general}</p>
+            )}
             </div>
 
             {/* Confirm Password */}
