@@ -80,9 +80,10 @@ export default function ShareModal({ show, onClose, catalogId, catalogData }) {
       case 'linkedin':
         shareUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`;
         break;
-      case 'email':
-        shareUrl = `mailto:?subject=${encodeURIComponent(title)}&body=${encodeURIComponent(`${text}\n\n${url}`)}`;
-        break;
+     case 'gmail':
+  shareUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=&su=${encodeURIComponent(title)}&body=${encodeURIComponent(`${text}\n\n${url}`)}`;
+  break;
+
       default:
         return;
     }
@@ -135,13 +136,18 @@ export default function ShareModal({ show, onClose, catalogId, catalogData }) {
       href: `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareLink)}`
     },
     {
-      name: 'Email',
+      name: 'Gmail',
       icon: (
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+       <path d="M2 4a2 2 0 012-2h16a2 2 0 012 2v16a2 2 0 01-2 2H4a2 2 0 01-2-2V4zm10 7L4 6v12h16V6l-8 5z" />
       ),
-      color: 'from-gray-500 to-gray-600',
-      href: `mailto:?subject=${encodeURIComponent(`Check out: ${catalogData?.title || 'Shared Catalog'}`)}&body=${encodeURIComponent(`${catalogData?.description || ''}\n\nView here: ${shareLink}`)}`
-    }
+      color: 'from-red-500 to-rose-600',
+      href: `https://mail.google.com/mail/?view=cm&fs=1&to=&su=${encodeURIComponent(
+      catalogData?.title || 'Check out this catalog'
+      )}&body=${encodeURIComponent(
+      `${catalogData?.description || ''}\n\nView here: ${shareLink}`
+  )}`
+}
+
   ];
 
   return (

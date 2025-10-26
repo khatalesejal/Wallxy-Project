@@ -163,9 +163,9 @@ export default function Dashboard() {
     }
   };
 
-  // const handleShare = (catalog) => {
-  //   setShareCatalog(catalog);
-  // };
+  const handleShare = (catalog) => {
+    setShareCatalog(catalog);
+  };
 
   const handleCopyLink = async (link) => {
     try {
@@ -242,73 +242,69 @@ export default function Dashboard() {
         {/* Dashboard Header with Stats */}
         <div className="bg-white/70 backdrop-blur-lg border border-white/30 rounded-2xl shadow-md p-6">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-800 mb-2">Dashboard</h1>
-              <p className="text-gray-600">Manage your PDF catalogs</p>
+            {/* Search Bar - Moved to header */}
+            <div className="flex-1 max-w-2xl">
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                  <svg 
+                    className="h-5 w-5 text-indigo-500" 
+                    fill="none" 
+                    viewBox="0 0 24 24" 
+                    stroke="currentColor"
+                    strokeWidth={2}
+                  >
+                    <path 
+                      strokeLinecap="round" 
+                      strokeLinejoin="round" 
+                      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" 
+                    />
+                  </svg>
+                </div>
+                <input
+                  type="text"
+                  className={`block w-full pl-12 pr-10 py-3.5 bg-white/90 text-gray-800 placeholder-indigo-300/80 rounded-xl shadow-sm 
+                    border-2 border-transparent 
+                    focus:border-indigo-400 focus:ring-0 focus:ring-offset-0
+                    transition-all duration-200 text-base outline-none
+                    ${searchQuery ? 'border-indigo-300' : 'border-transparent hover:border-indigo-200'}`}
+                  placeholder="Search by title..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  style={{
+                    boxShadow: '0 4px 20px -5px rgba(99, 102, 241, 0.15)'
+                  }}
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    className="absolute inset-y-0 right-0 pr-4 flex items-center text-indigo-400 hover:text-indigo-600 transition-colors"
+                    aria-label="Clear search"
+                  >
+                    <svg 
+                      className="h-5 w-5" 
+                      fill="none" 
+                      viewBox="0 0 24 24" 
+                      stroke="currentColor"
+                      strokeWidth={1.5}
+                    >
+                      <path 
+                        strokeLinecap="round" 
+                        strokeLinejoin="round" 
+                        d="M6 18L18 6M6 6l12 12" 
+                      />
+                    </svg>
+                  </button>
+                )}
+              </div>
             </div>
+            
+            {/* Catalog Count - Kept on the right */}
             <div className="flex gap-4">
               <div className="bg-gradient-to-r from-indigo-500 to-purple-600 text-white px-6 py-4 rounded-xl shadow-lg">
                 <div className="text-2xl font-bold">{stats.catalogCount}</div>
                 <div className="text-sm opacity-90">Total Catalogs</div>
               </div>
-
             </div>
-          </div>
-        </div>
-
-        {/* Search Bar */}
-        <div className="mb-8 max-w-2xl mx-auto px-4 sm:px-0">
-          <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-              <svg 
-                className="h-5 w-5 text-indigo-500" 
-                fill="none" 
-                viewBox="0 0 24 24" 
-                stroke="currentColor"
-                strokeWidth={2}
-              >
-                <path 
-                  strokeLinecap="round" 
-                  strokeLinejoin="round" 
-                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" 
-                />
-              </svg>
-            </div>
-            <input
-              type="text"
-              className={`block w-full pl-12 pr-10 py-3.5 bg-white/90 text-gray-800 placeholder-indigo-300/80 rounded-xl shadow-sm 
-                border-2 border-transparent 
-                focus:border-indigo-400 focus:ring-0 focus:ring-offset-0
-                transition-all duration-200 text-base outline-none
-                ${searchQuery ? 'border-indigo-300' : 'border-transparent hover:border-indigo-200'}`}
-              placeholder="Search by title..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              style={{
-                boxShadow: '0 4px 20px -5px rgba(99, 102, 241, 0.15)'
-              }}
-            />
-            {searchQuery && (
-              <button
-                onClick={() => setSearchQuery('')}
-                className="absolute inset-y-0 right-0 pr-4 flex items-center text-indigo-400 hover:text-indigo-600 transition-colors"
-                aria-label="Clear search"
-              >
-                <svg 
-                  className="h-5 w-5" 
-                  fill="none" 
-                  viewBox="0 0 24 24" 
-                  stroke="currentColor"
-                  strokeWidth={1.5}
-                >
-                  <path 
-                    strokeLinecap="round" 
-                    strokeLinejoin="round" 
-                    d="M6 18L18 6M6 6l12 12" 
-                  />
-                </svg>
-              </button>
-            )}
           </div>
         </div>
 
@@ -512,7 +508,7 @@ export default function Dashboard() {
                             </svg>
                           </button>
 
-                          {/* <button
+                          <button
                             onClick={() => handleShare(catalog)}
                             className="flex flex-col items-center justify-center w-12 h-12 bg-white shadow-md rounded-lg hover:bg-blue-50 text-blue-600 transition-all duration-200 hover:scale-105 hover:shadow-lg border border-blue-100"
                             title="Share"
@@ -520,7 +516,7 @@ export default function Dashboard() {
                             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
                             </svg>
-                          </button> */}
+                          </button>
                         </div>
                       </div>
                     </div>
@@ -573,12 +569,12 @@ export default function Dashboard() {
         onConfirm={handleDelete}
       />
 
-      {/*<ShareModal
+      <ShareModal
         show={!!shareCatalog}
         onClose={() => setShareCatalog(null)}
         catalogId={shareCatalog?._id}
         catalogData={shareCatalog}
-      />*/}
+      />
     </div>
   );
 }
