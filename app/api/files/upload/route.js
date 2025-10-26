@@ -92,7 +92,7 @@ export async function POST(req) {
     const uploadResult = await cloudinary.v2.uploader.upload(
       uploadedFile.filepath,
       {
-        folder: "wallxy_uploads",
+        folder: "catalogs",
         resource_type: "raw",
         use_filename: true,
         unique_filename: false
