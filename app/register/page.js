@@ -1,19 +1,29 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import toast, { ToastBar, Toaster } from 'react-hot-toast';
+import toast, { Toaster } from 'react-hot-toast';
+import { useRegisterUserMutation } from '../services/api';
 
 export default function SignupPage() {
   const router = useRouter();
+  const [registerUser, { isLoading, isError, error }] = useRegisterUserMutation();
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     password: '',
-    confirmPassword: ''
+   
   });
-   const [errors, setErrors] = useState({});
+  const [errors, setErrors] = useState({});
+
+  useEffect(() => {
+    if (isError && error) {
+      const errorMessage = error.data?.error || 'Registration failed';
+      setErrors({ general: errorMessage });
+      toast.error(errorMessage);
+    }
+  }, [isError, error]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -23,15 +33,14 @@ export default function SignupPage() {
     }));
     setErrors((prev) => ({ ...prev, [name]: '' }));
   };
-    const validate = () => {
+
+  const validate = () => {
     const newErrors = {};
 
     if (!formData.name.trim()) newErrors.name = 'Name is required';
-
     if (!formData.email) newErrors.email = 'Email is required';
     else if (!/\S+@\S+\.\S+/.test(formData.email))
       newErrors.email = 'Invalid email format';
-
     if (!formData.password) newErrors.password = 'Password is required';
     else if (formData.password.length < 8)
       newErrors.password = 'Password must be at least 8 characters';
@@ -41,39 +50,27 @@ export default function SignupPage() {
   };
 
   const handleSubmit = async (e) => {
-  e.preventDefault();
-  if (!validate()) return;
+    e.preventDefault();
+    if (!validate()) return;
 
-  try {
-    const res = await fetch('/api/user/register', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
+    try {
+      const result = await registerUser({
         username: formData.name,
         email: formData.email,
         password: formData.password
-      }),
-    });
+      }).unwrap();
 
-    const data = await res.json();
-
-    if (!res.ok) {
-      setErrors({ general: data.error || 'Something went wrong' });
-      return;
+      if (result) {
+        toast.success('Account created successfully!');
+        setTimeout(() => router.push('/'), 1000);
+      }
+    } catch (err) {
+      console.error('Signup error:', err);
+      // Error is handled by the useEffect
     }
+  };
 
-    toast.success('Account created successfully!');
-    setTimeout(()=>router.push('/'),1000) ;
-    
-  } catch (err) {
-    console.error('Signup error:', err);
-    alert('Server error');
-  }
-};
-
-
+  // The rest of your JSX remains exactly the same
   return (
     <div className="min-h-screen flex flex-col md:flex-row">
       <Toaster position="top-center" reverseOrder={false} />
@@ -84,11 +81,6 @@ export default function SignupPage() {
           <p className="text-blue-100 text-lg">
             Create your account and start building your catalogs with ease.
           </p>
-          {/* <img
-            src="https://undraw.co/api/illustrations/1df32a1a-63f3-4957-9a29-84a9aa185da2"
-            alt="Signup illustration"
-            className="mt-10 w-full max-w-xs mx-auto"
-          /> */}
         </div>
       </div>
 
@@ -101,7 +93,6 @@ export default function SignupPage() {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">
-            
             <div>
               <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
                 Username
@@ -122,7 +113,6 @@ export default function SignupPage() {
               {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
             </div>
 
-         
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
                 Email Address
@@ -143,7 +133,6 @@ export default function SignupPage() {
               {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
             </div>
 
-           
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
                 Password
@@ -164,37 +153,21 @@ export default function SignupPage() {
               />
               {errors.password && <p className="text-red-500 text-sm mt-1">{errors.password}</p>}
               {errors.general && (
-              <p className="text-red-600  text-sm">{errors.general}</p>
-            )}
+                <p className="text-red-600 text-sm">{errors.general}</p>
+              )}
             </div>
 
-            {/* Confirm Password */}
-            {/* <div>
-              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
-                Confirm Password
-              </label>
-              <input
-                type="password"
-                id="confirmPassword"
-                name="confirmPassword"
-                value={formData.confirmPassword}
-                onChange={handleChange}
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition outline-none"
-                minLength={6}
-                required
-              />
-            </div> */}
-
-           
             <button
               type="submit"
-              className="w-full bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition"
+              disabled={isLoading}
+              className={`w-full bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition ${
+                isLoading ? 'opacity-70 cursor-not-allowed' : ''
+              }`}
             >
-              Create Account
+              {isLoading ? 'Creating Account...' : 'Create Account'}
             </button>
           </form>
 
-         
           <div className="mt-6 text-center">
             <p className="text-sm text-gray-600">
               Already have an account?{' '}

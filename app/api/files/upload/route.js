@@ -12,6 +12,27 @@ cloudinary.v2.config({
   api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
+export default async function handler(req, res) {
+  const timestamp = Math.round(new Date().getTime() / 1000);
+
+  const paramsToSign = {
+    folder: "catalogs",
+    use_filename: true,
+    unique_filename: false,
+    timestamp: timestamp,
+  };
+
+  const signature = cloudinary.v2.utils.api_sign_request(
+    paramsToSign,
+    process.env.CLOUDINARY_API_SECRET
+  );
+
+  res.status(200).json({
+    timestamp,
+    signature,
+    api_key: process.env.CLOUDINARY_API_KEY,
+  });
+}
 
 // Disable Next.js body parsing
 export const config = {
