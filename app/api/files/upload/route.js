@@ -12,20 +12,40 @@ cloudinary.v2.config({
   api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
+export default async function handler(req, res) {
+  const timestamp = Math.round(new Date().getTime() / 1000);
 
-// Disable Next.js body parsing
+  const paramsToSign = {
+    folder: "catalogs",
+    use_filename: true,
+    unique_filename: false,
+    timestamp: timestamp,
+  };
+
+  const signature = cloudinary.v2.utils.api_sign_request(
+    paramsToSign,
+    process.env.CLOUDINARY_API_SECRET
+  );
+
+  res.status(200).json({
+    timestamp,
+    signature,
+    api_key: process.env.CLOUDINARY_API_KEY,
+  });
+}
+
 export const config = {
   api: {
     bodyParser: false,
   },
 };
 
-// Convert Next.js Request to Node.js readable stream
+
 function requestToNodeStream(req) {
   const readable = new Readable();
   readable._read = () => { };
 
-  // Copy headers for formidable
+  //headers for formidable
   readable.headers = Object.fromEntries(req.headers.entries());
 
   req.arrayBuffer().then((buf) => {
@@ -99,9 +119,13 @@ export async function POST(req) {
 
       }
     );
+    const fileData = {
+    fileUrl: uploadResult.secure_url,
+    public_id: uploadResult.public_id,
+    };
     console.log("uploadResult",uploadResult)
 
-    //Save or update file metadata to MongoDB
+    //update file metadata to MongoDB
     let fileRecord;
     const catalogId = fields.catalogId?.[0];
     
@@ -127,6 +151,7 @@ export async function POST(req) {
         description: fields.description?.[0] || "",
         fileUrl: uploadResult.secure_url,
         filename: uploadResult.original_filename,
+        public_id: uploadResult.public_id,
         owner: user._id,
         catalogId: catalogId || null,
         size: uploadResult.bytes,
@@ -136,11 +161,23 @@ export async function POST(req) {
       });
     }
 
-    //Respond success
-    return NextResponse.json(
-      { message: "File uploaded successfully!", file: fileRecord },
-      { status: 200 }
-    );
+
+return NextResponse.json(
+  {
+    message: "File uploaded successfully!",
+    file: {
+      fileUrl: uploadResult.secure_url,
+      filename: uploadResult.original_filename,
+      public_id: uploadResult.public_id,
+      size: uploadResult.bytes,
+      mimetype: uploadResult.format,
+      catalogName: fields.catalogName?.[0] || "Untitled Catalog",
+      description: fields.description?.[0] || "",
+    },
+  },
+  { status: 200 }
+);
+
   } catch (err) {
     console.error("UPLOAD ERROR:", err);
     return NextResponse.json(

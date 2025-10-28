@@ -49,15 +49,6 @@ export default function CatalogModal({
     setErrors((prev) => ({ ...prev, [name]: '' }));
   };
 
-  // const handleFileChange = (e) => {
-  //   const file = e.target.files[0];
-  //   if (file && file.type === 'application/pdf') {
-  //     const previewURL = URL.createObjectURL(file);
-  //     setCatalog((prev) => ({ ...prev, file, preview: previewURL }));
-  //   } else {
-  //     alert('Please upload a valid PDF file.');
-  //   }
-  // };
 
  const handleFileChange = (e) => {
   const file = e.target.files[0];
@@ -76,142 +67,411 @@ export default function CatalogModal({
 
   
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+//   const handleSubmit = async (e) => {
+//     e.preventDefault();
     
-    // Validation
-   if (!catalog.name.trim()) {
-    setErrors({ name: 'Catalog name is required' });
-     return;
+//     // Validation
+//    if (!catalog.name.trim()) {
+//     setErrors({ name: 'Catalog name is required' });
+//      return;
+//   } else {
+//   setErrors({}); 
+// }
+
+    
+//     // For new catalogs, file is required
+//     if (!editCatalog && !catalog.file) {
+//       toast.error('Please upload a PDF file');
+//       return;
+//     }
+    
+//     // For editing, file is optional - we can just update name/description
+
+//     setLoading(true);
+    
+//     try {
+//       let fileUrl = catalog.fileUrl; // Use existing fileUrl for edits
+      
+//       // If a new file is selected, upload it first
+//       if (catalog.file) {
+//         console.log('Uploading file:', catalog.file.name);
+        
+//         const formData = new FormData();
+//         formData.append('file', catalog.file);
+//         formData.append('catalogName', catalog.name);
+//         formData.append('description', catalog.description || '');
+//         formData.append('catalog', 'true');
+        
+//         // If editing, pass catalogId to update existing file
+//         if (editCatalog && editCatalog._id) {
+//           formData.append('catalogId', editCatalog._id);
+//         }
+
+//         console.log('FormData prepared, sending to /api/files/upload');
+
+//         const uploadResponse = await fetch('/api/files/upload', {
+//           method: 'POST',
+//           headers: {
+//             'Authorization': `Bearer ${localStorage.getItem('token')}`
+//           },
+//           body: formData
+//         });
+
+//         console.log('Upload response status:', uploadResponse.status);
+
+//         if (!uploadResponse.ok) {
+//           const errorText = await uploadResponse.text();
+//           console.error('Upload failed with response:', errorText);
+//           let errorData;
+//           try {
+//             errorData = JSON.parse(errorText);
+//           } catch (e) {
+//             console.error('Failed to parse error response as JSON:', e);
+//             throw new Error(`Upload failed with status ${uploadResponse.status}: ${errorText}`);
+//           }
+//           throw new Error(errorData.error || errorData.details || 'File upload failed');
+//         }
+
+//         const uploadData = await uploadResponse.json();
+//         console.log('Upload successful, response:', uploadData);
+        
+//         // The upload API returns the file data in uploadData.file
+//         if (!uploadData.file || !uploadData.file.fileUrl) {
+//           console.error('Invalid upload response structure:', uploadData);
+//           throw new Error('Upload response missing file URL');
+//         }
+        
+//         // fileUrl = uploadData.file.fileUrl;
+//         // console.log('File URL extracted:', fileUrl);
+//         fileUrl = uploadData.file.fileUrl;
+//         const publicId = uploadData.file.public_id; // ✅ Extract Cloudinary public_id
+//         console.log('File URL:', fileUrl, 'Public ID:', publicId);
+//       }
+
+      
+//       let catalogResponse;
+      
+//       if (editCatalog) {
+//         // Update existing catalog
+//         console.log("id", editCatalog._id)
+//         catalogResponse = await fetch(`/api/catalog/${editCatalog._id}`, {
+//           method: 'PUT',
+//           headers: {
+//             'Content-Type': 'application/json',
+//             'Authorization': `Bearer ${localStorage.getItem('token')}`
+//           },
+//           body: JSON.stringify({
+//             title: catalog.name,
+//             description: catalog.description || '',
+//             fileUrl: fileUrl,
+//             filename: catalog.file ? catalog.file.name : (editCatalog?.file?.filename || 'document.pdf')
+//           })
+//         });
+//       } else {
+//         // Create new catalog
+//         catalogResponse = await fetch('/api/catalog/create', {
+//           method: 'POST',
+//           headers: {
+//             'Content-Type': 'application/json',
+//             'Authorization': `Bearer ${localStorage.getItem('token')}`
+//           },
+//           body: JSON.stringify({
+//             title: catalog.name,
+//             description: catalog.description || '',
+//             fileUrl: fileUrl,
+//             filename: catalog.file ? catalog.file.name : (editCatalog?.file?.filename || 'document.pdf'),
+//              public_id: publicId // ✅ include it here
+//           })
+//         });
+//       }
+
+//       if (!catalogResponse.ok) {
+//         const errorData = await catalogResponse.json();
+//         throw new Error(errorData.error || 'Catalog operation failed');
+//       }
+
+//       const catalogData = await catalogResponse.json();
+      
+//       toast.success(editCatalog ? 'Catalog updated successfully!' : 'Catalog created successfully!');
+      
+//       // Call the parent's onSubmit with the result
+//       onSubmit(catalogData);
+      
+//       // Reset form
+//       setCatalog({ name: '', description: '', file: null, preview: '', fileUrl: '', existingFileName: '' });
+      
+//     } catch (error) {
+//       console.error('Error:', error);
+//       toast.error(error.message || 'Something went wrong');
+//     } finally {
+//       setLoading(false);
+//     }
+//   };
+
+// const handleSubmit = async (e) => {
+//   e.preventDefault();
+
+//   // Validation
+//   if (!catalog.name.trim()) {
+//     setErrors({ name: "Catalog name is required" });
+//     return;
+//   } else {
+//     setErrors({});
+//   }
+
+//   // For new catalogs, file is required
+//   if (!editCatalog && !catalog.file) {
+//     toast.error("Please upload a PDF file");
+//     return;
+//   }
+
+//   setLoading(true);
+
+//   try {
+//     let fileUrl = catalog.fileUrl; // Use existing fileUrl for edits
+//     let publicId = editCatalog?.file?.public_id || ""; // ✅ Initialize it safely
+
+//     // If a new file is selected, upload it first
+//     if (catalog.file) {
+//       console.log("Uploading file:", catalog.file.name);
+
+//       const formData = new FormData();
+//       formData.append("file", catalog.file);
+//       formData.append("catalogName", catalog.name);
+//       formData.append("description", catalog.description || "");
+//       formData.append("catalog", "true");
+
+//       // If editing, pass catalogId to update existing file
+//       if (editCatalog && editCatalog._id) {
+//         formData.append("catalogId", editCatalog._id);
+//       }
+
+//       console.log("FormData prepared, sending to /api/files/upload");
+
+//       const uploadResponse = await fetch("/api/files/upload", {
+//         method: "POST",
+//         headers: {
+//           Authorization: `Bearer ${localStorage.getItem("token")}`,
+//         },
+//         body: formData,
+//       });
+
+//       console.log("Upload response status:", uploadResponse.status);
+
+//       if (!uploadResponse.ok) {
+//         const errorText = await uploadResponse.text();
+//         console.error("Upload failed with response:", errorText);
+//         let errorData;
+//         try {
+//           errorData = JSON.parse(errorText);
+//         } catch (e) {
+//           console.error("Failed to parse error response as JSON:", e);
+//           throw new Error(
+//             `Upload failed with status ${uploadResponse.status}: ${errorText}`
+//           );
+//         }
+//         throw new Error(errorData.error || errorData.details || "File upload failed");
+//       }
+
+//       const uploadData = await uploadResponse.json();
+//       console.log("Upload successful, response:", uploadData);
+
+//       if (!uploadData.file || !uploadData.file.fileUrl) {
+//         console.error("Invalid upload response structure:", uploadData);
+//         throw new Error("Upload response missing file URL");
+//       }
+
+//       // ✅ Assign both values outside the block
+//       fileUrl = uploadData.file.fileUrl;
+//       publicId = uploadData.file.public_id;
+//       console.log("File URL:", fileUrl, "Public ID:", publicId);
+//     }
+
+//     let catalogResponse;
+
+//     if (editCatalog) {
+//       // Update existing catalog
+//       console.log("Editing catalog ID:", editCatalog._id);
+//       catalogResponse = await fetch(`/api/catalog/${editCatalog._id}`, {
+//         method: "PUT",
+//         headers: {
+//           "Content-Type": "application/json",
+//           Authorization: `Bearer ${localStorage.getItem("token")}`,
+//         },
+//         body: JSON.stringify({
+//           title: catalog.name,
+//           description: catalog.description || "",
+//           fileUrl: fileUrl,
+//           filename:
+//             catalog.file?.name ||
+//             editCatalog?.file?.filename ||
+//             "document.pdf",
+//           public_id: publicId, // ✅ include safely
+//         }),
+//       });
+//     } else {
+//       // Create new catalog
+//       catalogResponse = await fetch("/api/catalog/create", {
+//         method: "POST",
+//         headers: {
+//           "Content-Type": "application/json",
+//           Authorization: `Bearer ${localStorage.getItem("token")}`,
+//         },
+//         body: JSON.stringify({
+//           title: catalog.name,
+//           description: catalog.description || "",
+//           fileUrl: fileUrl,
+//           filename:
+//             catalog.file?.name ||
+//             editCatalog?.file?.filename ||
+//             "document.pdf",
+//           public_id: publicId, // ✅ always defined
+//         }),
+//       });
+//     }
+
+//     if (!catalogResponse.ok) {
+//       const errorData = await catalogResponse.json();
+//       throw new Error(errorData.error || "Catalog operation failed");
+//     }
+
+//     const catalogData = await catalogResponse.json();
+
+//     toast.success(
+//       editCatalog
+//         ? "Catalog updated successfully!"
+//         : "Catalog created successfully!"
+//     );
+
+//     // Call parent onSubmit
+//     onSubmit(catalogData);
+
+//     // Reset form
+//     setCatalog({
+//       name: "",
+//       description: "",
+//       file: null,
+//       preview: "",
+//       fileUrl: "",
+//       existingFileName: "",
+//     });
+//   } catch (error) {
+//     console.error("Error:", error);
+//     toast.error(error.message || "Something went wrong");
+//   } finally {
+//     setLoading(false);
+//   }
+// };
+
+const handleSubmit = async (e) => {
+  e.preventDefault();
+
+  if (!catalog.name.trim()) {
+    setErrors({ name: "Catalog name is required" });
+    return;
   } else {
-  setErrors({}); 
-}
+    setErrors({});
+  }
 
-    
-    // For new catalogs, file is required
-    if (!editCatalog && !catalog.file) {
-      toast.error('Please upload a PDF file');
-      return;
+  if (!editCatalog && !catalog.file) {
+    toast.error("Please upload a PDF file");
+    return;
+  }
+
+  setLoading(true);
+
+  try {
+    let fileUrl = catalog.fileUrl || editCatalog?.file?.fileUrl || "";
+    let publicId = editCatalog?.file?.public_id || "";
+
+    // If a new file is selected, upload it first
+    if (catalog.file) {
+      const formData = new FormData();
+      formData.append("file", catalog.file);
+      formData.append("catalogName", catalog.name);
+      formData.append("description", catalog.description || "");
+      formData.append("catalog", "true");
+
+      if (editCatalog && editCatalog._id) {
+        formData.append("catalogId", editCatalog._id);
+      }
+
+      const uploadResponse = await fetch("/api/files/upload", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+        body: formData,
+      });
+
+      if (!uploadResponse.ok) {
+        const errorText = await uploadResponse.text();
+        throw new Error(errorText);
+      }
+
+      const uploadData = await uploadResponse.json();
+
+      fileUrl = uploadData.file.fileUrl;
+      publicId = uploadData.file.public_id; // update if new file uploaded
     }
-    
-    // For editing, file is optional - we can just update name/description
 
-    setLoading(true);
-    
-    try {
-      let fileUrl = catalog.fileUrl; // Use existing fileUrl for edits
-      
-      // If a new file is selected, upload it first
-      if (catalog.file) {
-        console.log('Uploading file:', catalog.file.name);
-        
-        const formData = new FormData();
-        formData.append('file', catalog.file);
-        formData.append('catalogName', catalog.name);
-        formData.append('description', catalog.description || '');
-        formData.append('catalog', 'true');
-        
-        // If editing, pass catalogId to update existing file
-        if (editCatalog && editCatalog._id) {
-          formData.append('catalogId', editCatalog._id);
-        }
+    // Create or Update API call
+    const payload = {
+      title: catalog.name,
+      description: catalog.description || "",
+      fileUrl: fileUrl,
+      filename:
+        catalog.file?.name ||
+        editCatalog?.file?.filename ||
+        "document.pdf",
+      public_id: publicId, // always included, reused if old
+    };
 
-        console.log('FormData prepared, sending to /api/files/upload');
-
-        const uploadResponse = await fetch('/api/files/upload', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-          },
-          body: formData
-        });
-
-        console.log('Upload response status:', uploadResponse.status);
-
-        if (!uploadResponse.ok) {
-          const errorText = await uploadResponse.text();
-          console.error('Upload failed with response:', errorText);
-          let errorData;
-          try {
-            errorData = JSON.parse(errorText);
-          } catch (e) {
-            console.error('Failed to parse error response as JSON:', e);
-            throw new Error(`Upload failed with status ${uploadResponse.status}: ${errorText}`);
-          }
-          throw new Error(errorData.error || errorData.details || 'File upload failed');
-        }
-
-        const uploadData = await uploadResponse.json();
-        console.log('Upload successful, response:', uploadData);
-        
-        // The upload API returns the file data in uploadData.file
-        if (!uploadData.file || !uploadData.file.fileUrl) {
-          console.error('Invalid upload response structure:', uploadData);
-          throw new Error('Upload response missing file URL');
-        }
-        
-        fileUrl = uploadData.file.fileUrl;
-        console.log('File URL extracted:', fileUrl);
+    const catalogResponse = await fetch(
+      editCatalog
+        ? `/api/catalog/${editCatalog._id}`
+        : "/api/catalog/create",
+      {
+        method: editCatalog ? "PUT" : "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+        body: JSON.stringify(payload),
       }
+    );
 
-      
-      let catalogResponse;
-      
-      if (editCatalog) {
-        // Update existing catalog
-        console.log("id", editCatalog._id)
-        catalogResponse = await fetch(`/api/catalog/${editCatalog._id}`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-          },
-          body: JSON.stringify({
-            title: catalog.name,
-            description: catalog.description || '',
-            fileUrl: fileUrl,
-            filename: catalog.file ? catalog.file.name : (editCatalog?.file?.filename || 'document.pdf')
-          })
-        });
-      } else {
-        // Create new catalog
-        catalogResponse = await fetch('/api/catalog/create', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-          },
-          body: JSON.stringify({
-            title: catalog.name,
-            description: catalog.description || '',
-            fileUrl: fileUrl,
-            filename: catalog.file ? catalog.file.name : (editCatalog?.file?.filename || 'document.pdf')
-          })
-        });
-      }
-
-      if (!catalogResponse.ok) {
-        const errorData = await catalogResponse.json();
-        throw new Error(errorData.error || 'Catalog operation failed');
-      }
-
-      const catalogData = await catalogResponse.json();
-      
-      toast.success(editCatalog ? 'Catalog updated successfully!' : 'Catalog created successfully!');
-      
-      // Call the parent's onSubmit with the result
-      onSubmit(catalogData);
-      
-      // Reset form
-      setCatalog({ name: '', description: '', file: null, preview: '', fileUrl: '', existingFileName: '' });
-      
-    } catch (error) {
-      console.error('Error:', error);
-      toast.error(error.message || 'Something went wrong');
-    } finally {
-      setLoading(false);
+    if (!catalogResponse.ok) {
+      const errorData = await catalogResponse.json();
+      throw new Error(errorData.error || "Catalog operation failed");
     }
-  };
+
+    const catalogData = await catalogResponse.json();
+
+    toast.success(
+      editCatalog
+        ? "Catalog updated successfully!"
+        : "Catalog created successfully!"
+    );
+
+    onSubmit(catalogData);
+
+    setCatalog({
+      name: "",
+      description: "",
+      file: null,
+      preview: "",
+      fileUrl: "",
+      existingFileName: "",
+    });
+  } catch (error) {
+    console.error("Error:", error);
+    toast.error(error.message || "Something went wrong");
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   if (!show) return null;
 
