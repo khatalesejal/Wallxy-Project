@@ -56,7 +56,7 @@ const ViewCatalogPage = () => {
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-2xl font-bold text-gray-800">Catalog not found</h1>
-          <p className="mt-2 text-gray-600">The requested catalog could not be found or you don't have permission to view it.</p>
+          <p className="mt-2 text-gray-600">The requested catalog could not be found or you dont have permission to view it.</p>
           <button
             onClick={() => router.push('/')}
             className="mt-4 px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors"
@@ -160,7 +160,7 @@ const ViewCatalogPage = () => {
                   </div>
                   <h3 className="text-lg font-medium text-gray-900">No document available</h3>
                   <p className="mt-2 text-gray-500 max-w-md">
-                    This catalog doesn't have a document attached or the file could not be loaded.
+                    This catalog doesnt have a document attached or the file could not be loaded.
                   </p>
                 </div>
               )}

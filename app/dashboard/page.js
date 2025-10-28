@@ -6,19 +6,33 @@ import CatalogModal from "../components/CatalogModal";
 import DeleteModal from "../components/DeleteModal";
 import ShareModal from "../components/ShareModal";
 import toast, { Toaster } from "react-hot-toast";
+import { useGetDashboardQuery,useDeleteCatalogMutation } from "../services/api";
 
 export default function Dashboard() {
   const [showModal, setShowModal] = useState(false);
-  const [catalogs, setCatalogs] = useState([]);
+  
   const [editId, setEditId] = useState(null);
   const [deleteId, setDeleteId] = useState(null);
   const [shareCatalog, setShareCatalog] = useState(null);
   const [openDropdownId, setOpenDropdownId] = useState(null);
   const [viewMode, setViewMode] = useState("grid"); 
   const dropdownRefs = useRef({});
-  const [stats, setStats] = useState({ uploadsCount: 0, catalogCount: 0, recentUploads: [], userCatalogs: [] });
+  const {
+    data,
+    isLoading,
+    isError,
+    refetch,
+  } = useGetDashboardQuery(undefined, {
+    refetchOnMountOrArgChange: true,
+  });
+  
+
+  // Default fallback data
+  const stats = data?.stats || { uploadsCount: 0, catalogCount: 0, userCatalogs: [] };
+  const catalogs = stats.userCatalogs || [];
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [deleteCatalog] = useDeleteCatalogMutation();
 
   const openModal = () => setShowModal(true);
   const closeModal = () => {
@@ -46,78 +60,97 @@ export default function Dashboard() {
 };
 
 
-  const handleDelete = async () => {
+  // const handleDelete = async () => {
   
-      try {
-        const res = await fetch(`/api/catalog/${deleteId}`, {
-          method: "DELETE",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${localStorage.getItem("token")}`
-          },
-        });
+  //     try {
+  //       const res = await fetch(`/api/catalog/${deleteId}`, {
+  //         method: "DELETE",
+  //         headers: {
+  //           "Content-Type": "application/json",
+  //           "Authorization": `Bearer ${localStorage.getItem("token")}`
+  //         },
+  //       });
 
-        if (!res.ok) {
-          throw new Error("Failed to delete catalog");
-        }
+  //       if (!res.ok) {
+  //         throw new Error("Failed to delete catalog");
+  //       }
 
-        toast.success('Catalog deleted successfully!');
-        // Refresh the catalog list from server
-        await fetchDashboardData();
-      } catch (error) {
-        console.error('Error deleting catalog:', error);
-        toast.error('Error deleting catalog');
-      }finally {
-      setDeleteId(null);
-      setOpenDropdownId(null);
-    }
+  //       toast.success('Catalog deleted successfully!');
+  //       // Refresh the catalog list from server
+  //       await refetch();
+  //     } catch (error) {
+  //       console.error('Error deleting catalog:', error);
+  //       toast.error('Error deleting catalog');
+  //     }finally {
+  //     setDeleteId(null);
+  //     setOpenDropdownId(null);
+  //   }
     
    
-  };
+  // };
 
 
-  const handleSubmit = async (catalogData) => {
-    try {
-      // Since the CatalogModal already handles API calls, 
-      // we just need to refresh the catalog list from the server
-      await fetchDashboardData();
-      closeModal();
-      // Note: Success toast is already shown in CatalogModal
-    } catch (error) {
-      console.error('Error refreshing catalog list:', error);
-      toast.error('Error refreshing catalog list');
-    }
-  };
+  // const handleSubmit = async (catalogData) => {
+  //   try {
+      
+  //     await fetchDashboardData();
+  //     closeModal();
+  //   } catch (error) {
+  //     console.error('Error refreshing catalog list:', error);
+  //     toast.error('Error refreshing catalog list');
+  //   }
+  // };
 
-  const fetchDashboardData = async () => {
-    setLoading(true);
-    try {
-      const res = await fetch("/api/dashboard", {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${localStorage.getItem("token")}`
-        },
-      });
+  // const fetchDashboardData = async () => {
+  //   setLoading(true);
+  //   try {
+  //     const res = await fetch("/api/dashboard", {
+  //       method: "GET",
+  //       headers: {
+  //         "Content-Type": "application/json",
+  //         "Authorization": `Bearer ${localStorage.getItem("token")}`
+  //       },
+  //     });
 
-      if (!res.ok) {
-        throw new Error("Failed to fetch dashboard data");
-      }
+  //     if (!res.ok) {
+  //       throw new Error("Failed to fetch dashboard data");
+  //     }
 
-      const data = await res.json();
-      console.log("Get response ", data)
-      const userCatalogs = data.stats?.userCatalogs || [];
-      setCatalogs(userCatalogs);
-      setStats({
-        ...data.stats,
-        catalogCount: userCatalogs.length
-      });
-    } catch (err) {
-      console.error(err);
-      toast.error("Error loading dashboard data");
-    } finally {
-      setLoading(false);
-    }
+  //     const data = await res.json();
+  //     console.log("Get response ", data)
+  //     const userCatalogs = data.stats?.userCatalogs || [];
+  //     setCatalogs(userCatalogs);
+  //     setStats({
+  //       ...data.stats,
+  //       catalogCount: userCatalogs.length
+  //     });
+  //   } catch (err) {
+  //     console.error(err);
+  //     toast.error("Error loading dashboard data");
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+
+  const handleDelete = async () => {
+  try {
+    const result = await deleteCatalog(deleteId).unwrap();
+    toast.success("Catalog deleted successfully!");
+    await refetch(); 
+  } catch (err) {
+    console.error("Delete error:", err);
+    toast.error("Error deleting catalog");
+  } finally {
+    setDeleteId(null);
+    setOpenDropdownId(null);
+  }
+};
+ 
+  
+  const handleSubmit = async () => {
+    await refetch();
+    setShowModal(false);
+    setEditId(null);
   };
   const handleDownload = async (url, name) => {
     try {
@@ -227,9 +260,9 @@ export default function Dashboard() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  useEffect(() => {
-    fetchDashboardData();
-  }, []);
+  // useEffect(() => {
+  //   fetchDashboardData();
+  // }, []);
  
 
 
