@@ -555,13 +555,19 @@ const handleSubmit = async (e) => {
             </div>
 
             <div className="flex justify-end space-x-3 pt-2">
-              <button
-                type="button"
-                onClick={onClose}
-                className="px-5 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-100 border border-gray-300 rounded-lg transition"
-              >
-                Cancel
-              </button>
+             <button
+              type="button"
+              onClick={onClose}
+              disabled={loading} 
+              className={`px-5 py-2.5 text-sm font-medium border rounded-lg transition
+                ${loading
+                  ? "text-gray-400 bg-gray-100 border-gray-200 cursor-not-allowed"
+                  : "text-gray-700 hover:bg-gray-100 border-gray-300"
+                }`}
+            >
+              Cancel
+            </button>
+
               <button
                 type="submit"
                 disabled={loading}
