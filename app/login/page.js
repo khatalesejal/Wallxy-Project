@@ -1,31 +1,40 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from "next/navigation";
-import toast, { Toaster } from "react-hot-toast";
-
+import { Toaster } from "react-hot-toast";
+import { useLoginUserMutation } from '../services/api';
 
 export default function LoginPage() {
-   const router = useRouter();
-   const [email, setEmail] = useState("");
-   const [password, setPassword] = useState("");
-   const [loading, setLoading] = useState(false);
-   const [errors, setErrors] = useState({});
-  
-   const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  const router = useRouter();
+  const [loginUser, { isLoading, isError, error }] = useLoginUserMutation();
+  const [formData, setFormData] = useState({
+    email: "",
+    password: ""
+  });
+  const [errors, setErrors] = useState({});
+
+  useEffect(() => {
+    if (isError && error) {
+      const errorMessage = error.data?.error || "Invalid email or password";
+      setErrors(prev => ({ ...prev, backend: errorMessage }));
+    }
+  }, [isError, error]);
+
+  const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
   const validate = () => {
     const newErrors = {};
-    if (!email.trim()) {
+    if (!formData.email.trim()) {
       newErrors.email = "Email is required";
-    } else if (!isValidEmail(email)) {
+    } else if (!isValidEmail(formData.email)) {
       newErrors.email = "Enter a valid email address";
     }
 
-   if (!password.trim()) {
+    if (!formData.password.trim()) {
       newErrors.password = "Password is required";
-    } else if (password.length !== 8) {
+    } else if (formData.password.length !== 8) {
       newErrors.password = "Password must be exactly 8 characters";
     }
 
@@ -33,51 +42,40 @@ export default function LoginPage() {
     return Object.keys(newErrors).length === 0;
   };
 
-
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
       [name]: value
     }));
+    // Clear error for the field being edited
+    if (errors[name]) {
+      setErrors(prev => ({ ...prev, [name]: '' }));
+    }
   };
 
- const handleSubmit = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validate()) return;
 
-    setLoading(true);
-
     try {
-      const res = await fetch("/api/user/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }), 
-      });
-       
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        toast.error(data.error || "Login failed");
-         setErrors(prev => ({ ...prev, backend: data.error || "Invalid email or password" }));
-      } else {
-        // Save token and user info
-        localStorage.setItem("token", data.token);
-        localStorage.setItem("user", JSON.stringify(data.user));
-        toast.success("Login successful!");
+      const result = await loginUser(formData).unwrap();
+      if (result?.token) {
+        localStorage.setItem("token", result.token);
+        if (result.user) {
+          localStorage.setItem("user", JSON.stringify(result.user));
+        }
         router.push("/dashboard");
       }
     } catch (err) {
-      console.error(err);
-      toast.error("Server error");
-    } finally {
-      setLoading(false);
+      console.error('Login error:', err);
+      // Error is handled by the useEffect
     }
   };
 
   return (
     <div className="min-h-screen flex flex-col md:flex-row">
+      <Toaster position="top-center" reverseOrder={false} />
       {/* Left side */}
       <div className="hidden md:flex w-full md:w-1/2 bg-gradient-to-br from-blue-500 to-indigo-600 text-white items-center justify-center p-12">
         <div className="max-w-md">
@@ -85,11 +83,6 @@ export default function LoginPage() {
           <p className="text-lg text-blue-100">
             Sign in to your account and manage your catalogs with ease.
           </p>
-          {/* <img
-            src="https://undraw.co/api/illustrations/1df32a1a-63f3-4957-9a29-84a9aa185da2" // You can replace this with any valid illustration
-            alt="Illustration"
-            className="mt-8 w-full max-w-sm"
-          /> */}
         </div>
       </div>
 
@@ -107,16 +100,12 @@ export default function LoginPage() {
                 Email Address
               </label>
               <input
-                type="text"
+                type="email"
                 id="email"
                 name="email"
-                value={email}
-                onChange={(e) => {
-                  setEmail(e.target.value);
-                  if (errors.email) setErrors({ ...errors, email: "" });
-                }}
+                value={formData.email}
+                onChange={handleChange}
                 placeholder="Enter your email"
-               
                 className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 transition outline-none ${
                   errors.email
                     ? "border-red-500 focus:ring-red-400"
@@ -131,19 +120,13 @@ export default function LoginPage() {
                 <label htmlFor="password" className="block text-sm font-medium text-gray-700">
                   Password
                 </label>
-                {/* <Link href="/forgot-password" className="text-sm text-blue-600 hover:underline">
-                  Forgot password?
-                </Link> */}
               </div>
               <input
                 type="password"
                 id="password"
                 name="password"
-                value={password}
-                onChange={(e) => {
-                  setPassword(e.target.value);
-                  if (errors.password) setErrors({ ...errors, password: "" });
-                }}
+                value={formData.password}
+                onChange={handleChange}
                 placeholder="Enter your password"
                 className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 transition outline-none ${
                   errors.password
@@ -153,15 +136,17 @@ export default function LoginPage() {
                 maxLength={8}
               />
               {errors.password && <p className="text-red-500 text-sm mt-1">{errors.password}</p>}
-              {errors.backend && <p className="text-red-500 text-sm mt-2 ">{errors.backend}</p>}
+              {errors.backend && <p className="text-red-500 text-sm mt-2">{errors.backend}</p>}
             </div>
 
             <button
               type="submit"
-              disabled={loading}
-              className="w-full bg-indigo-500 text-white py-2 rounded-md hover:bg-indigo-600 transition"
+              disabled={isLoading}
+              className={`w-full bg-indigo-500 text-white py-2 rounded-md hover:bg-indigo-600 transition ${
+                isLoading ? 'opacity-70 cursor-not-allowed' : ''
+              }`}
             >
-              {loading ? "Logging in..." : "Login"}
+              {isLoading ? "Logging in..." : "Login"}
             </button>
           </form>
 

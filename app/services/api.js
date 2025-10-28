@@ -1,0 +1,48 @@
+
+import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
+
+export const api = createApi({
+  reducerPath: 'api',
+  baseQuery: fetchBaseQuery({ 
+    baseUrl: '/api',
+    prepareHeaders: (headers) => {
+      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+      if (token) {
+        headers.set('authorization', `Bearer ${token}`);
+      }
+      return headers;
+    },
+  }),
+  endpoints: (builder) => ({
+    registerUser: builder.mutation({
+      query: (userData) => ({
+        url: '/user/register',
+        method: 'POST',
+        body: userData,
+      }),
+    }),
+     loginUser: builder.mutation({
+      query: (credentials) => ({
+        url: '/user/login',
+        method: 'POST',
+        body: credentials,
+      }),
+    }),
+    getDashboard: builder.query({
+      query: () => '/dashboard',
+    }),
+    deleteCatalog:builder.mutation({
+      query:(id)=>({
+        url:`catalog/${id}`,
+        method:'DELETE',
+      })
+    })
+  }),
+});
+
+export const { 
+  useRegisterUserMutation,
+  useLoginUserMutation,
+  useGetDashboardQuery,
+  useDeleteCatalogMutation,
+} = api;
