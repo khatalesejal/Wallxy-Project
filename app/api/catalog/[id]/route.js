@@ -5,6 +5,14 @@ import File from "../../../models/File.js";
 import { getUserFromRequest } from "../../../util/auth.js";
 import { connectToDB } from "../../../util/db.js";
 import mongoose from "mongoose";
+// import { v2 as cloudinary } from "cloudinary";
+
+// cloudinary.v2.config({
+//   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+//   api_key: process.env.CLOUDINARY_API_KEY,
+//   api_secret: process.env.CLOUDINARY_API_SECRET,
+// });
+
 
 export async function GET(req, context) {
   try {
@@ -63,17 +71,17 @@ export async function PUT(req, context) {
 
     const { title, description, fileUrl, filename: newFilename, public_id} = body;
     
-    // 🧹 If a new file is uploaded, delete the old file from Cloudinary
+    // If a new file is uploaded, delete the old file from Cloudinary
     if (fileUrl && catalog.file?.fileUrl && catalog.file?.public_id) {
       try {
         await cloudinary.uploader.destroy(catalog.file.public_id);
-        console.log("🗑️ Old Cloudinary file deleted");
+        console.log("Old Cloudinary file deleted");
       } catch (error) {
         console.error("Cloudinary delete failed:", error.message);
       }
     }
 
-    // ✅ Update catalog fields
+    // Update catalog fields
     if (title) catalog.title = title;
     if (description !== undefined) catalog.description = description;
 
@@ -84,7 +92,7 @@ export async function PUT(req, context) {
       catalog.file = {
         filename,
         fileUrl,
-        public_id, // 👈 Save Cloudinary public_id for future deletes
+        public_id, //Save Cloudinary public_id for future deletes
       };
     }
 
@@ -164,9 +172,29 @@ export async function DELETE(req, context) {
         console.error("Cloudinary delete failed:", err.message);
       }
     }
+    
+    // //  Delete file from Cloudinary
+    // if (catalog.file?.fileUrl) {
+    //   try {
+    //     const fileUrl = catalog.file.fileUrl;
+    //     const publicId = fileUrl
+    //       .split("/upload/")[1]
+    //       .replace(/^v\d+\//, "")
+    //       .replace(/\.[^/.]+$/, "");
 
+    //     console.log(" Deleting from Cloudinary:", publicId);
+
+    //     const result = await cloudinary.v2.uploader.destroy(publicId, {
+    //       resource_type: "raw",
+    //     });
+
+    //     console.log(" Cloudinary delete result:", result);
+    //   } catch (err) {
+    //     console.error(" Cloudinary delete failed:", err.message);
+    //   }
+    // }
     await Catalog.deleteOne({ _id: id });
-
+    // await Catalog.findByIdAndDelete(id);
     return NextResponse.json({ success: true, message: "Catalog deleted successfully" });
 
   } catch (err) {
