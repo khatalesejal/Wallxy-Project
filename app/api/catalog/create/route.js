@@ -13,11 +13,11 @@ export async function POST(req) {
 
   try {
     const body = await req.json();
-    const { title, description, fileUrl, filename } = body;
+    const { title, description, fileUrl, filename, public_id} = body;
 
-    if (!title || !fileUrl || !filename) {
+    if (!title || !fileUrl || !filename || !public_id) {
       return new Response(
-        JSON.stringify({ error: "Title, Filename, and File URL are required" }),
+        JSON.stringify({ error: "Title, Filename, File URL and public_id are required" }),
         { status: 400 }
       );
     }
@@ -25,7 +25,7 @@ export async function POST(req) {
     const catalog = await Catalog.create({
       title,
       description,
-      file: { filename, fileUrl },
+      file: { filename, fileUrl, public_id },
       owner: user._id,
     });
 
@@ -36,7 +36,7 @@ export async function POST(req) {
         data: {
           title,
           description,
-          file: { filename, fileUrl },
+          file: { filename, fileUrl, public_id},
           owner: user._id,
         },
       },

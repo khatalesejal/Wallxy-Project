@@ -6,6 +6,7 @@ const CatalogSchema = new mongoose.Schema({
    file: {
       filename: { type: String, required: true },
       fileUrl: { type: String, required: true },
+      public_id: { type: String, required: true },
     },
   owner: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
   createdAt: { type: Date, default: Date.now },

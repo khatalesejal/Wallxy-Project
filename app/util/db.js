@@ -15,10 +15,10 @@ export async function connectToDB(retries = 5) {
         useUnifiedTopology: true,
       });
       isConnected = true;
-      console.log('✅ MongoDB connected');
+      console.log(' MongoDB connected');
       break;
     } catch (err) {
-      console.error(`❌ MongoDB connection error: ${err.message}`);
+      console.error(`MongoDB connection error: ${err.message}`);
       retries -= 1;
       console.log(`Retrying... (${retries} attempts left)`);
       await new Promise(res => setTimeout(res, 3000)); // wait 3 sec before retry
