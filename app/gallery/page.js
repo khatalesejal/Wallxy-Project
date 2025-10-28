@@ -1,34 +1,42 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import Navbar from '../components/Navbar';
+import Navbar from "../components/Navbar";
 import toast, { Toaster } from "react-hot-toast";
-import ShareModal from '../components/ShareModal';
+import ShareModal from "../components/ShareModal";
+import { useDispatch, useSelector } from "react-redux";
+import {
+  setSearchQuery,
+  openShareModal,
+  closeShareModal,
+} from "../features/gallerySlice";
+import { useGetAllCatalogsQuery } from "../services/api";
 
 export default function Gallery() {
-  const [catalogs, setCatalogs] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [shareCatalog, setShareCatalog] = useState(null);
-  const [searchQuery, setSearchQuery] = useState('');
+  const dispatch = useDispatch();
+  const { searchQuery, shareCatalog } = useSelector((state) => state.gallery);
+
+  // ✅ Fetch catalogs using RTK Query
+  const {
+    data: catalogs = [],
+    isLoading,
+    isError,
+    error,
+  } = useGetAllCatalogsQuery();
 
   const handleDownload = async (url, name) => {
     try {
-      // Create a more robust download function
       const response = await fetch(url);
       const blob = await response.blob();
       const downloadUrl = window.URL.createObjectURL(blob);
-      
+
       const a = document.createElement("a");
       a.href = downloadUrl;
       a.download = name || "catalog.pdf";
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
-      
-      // Clean up the blob URL
       window.URL.revokeObjectURL(downloadUrl);
-      
+
       toast.success("PDF downloaded successfully!", {
         icon: "📥",
         style: {
@@ -55,12 +63,10 @@ export default function Gallery() {
       });
     }
   };
-   const handleShare = (catalog) => {
-    setShareCatalog(catalog);
-  };
 
-  const handleCopyLink = async (link) => {
-    try {
+ const handleCopyLink = async (link) => {
+  try {
+    if (typeof navigator !== "undefined" && navigator.clipboard) {
       await navigator.clipboard.writeText(link);
       toast.success("PDF link copied to clipboard!", {
         icon: "🔗",
@@ -73,54 +79,44 @@ export default function Gallery() {
           padding: "12px 16px",
         },
       });
-    } catch (error) {
-      console.error("Copy failed:", error);
-      // Fallback for older browsers
+    } else {
+      // Fallback for older browsers or server-side
       const textArea = document.createElement("textarea");
       textArea.value = link;
       document.body.appendChild(textArea);
       textArea.select();
-      document.execCommand('copy');
+      document.execCommand("copy");
       document.body.removeChild(textArea);
-      
-      toast.success("PDF link copied to clipboard!", {
-        icon: "🔗",
+
+      toast.success("PDF link copied", {
+        icon: "📋",
         style: {
           borderRadius: "12px",
           background: "linear-gradient(to right, #6366f1, #8b5cf6)",
           color: "#ffffff",
-          fontWeight: "500",
-          boxShadow: "0 4px 15px rgba(99, 102, 241, 0.3)",
-          padding: "12px 16px",
         },
       });
     }
+  } catch (error) {
+    console.error("Copy failed:", error);
+    toast.error("Failed to copy link", {
+      icon: "❌",
+      style: {
+        borderRadius: "12px",
+        background: "linear-gradient(to right, #ef4444, #dc2626)",
+        color: "#ffffff",
+      },
+    });
+  }
+};
+
+
+  const handleShare = (catalog) => {
+    dispatch(openShareModal(catalog));
   };
 
-  useEffect(() => {
-    async function fetchCatalogs() {
-      setLoading(true);
-      setError("");
-      try {
-        const res = await fetch('/api/catalog/all');
-        console.log("response--",res) // Your backend endpoint
-        if (!res.ok) {
-          throw new Error(`Error: ${res.status}`);
-        }
-        const data = await res.json();
-        setCatalogs(data);
-      } catch (err) {
-        console.error(err);
-        setError("Failed to load catalogs. Please try again.");
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    fetchCatalogs();
-  }, []);
-
-  if (loading) {
+  // ✅ Loading state
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50">
         <Navbar />
@@ -134,24 +130,26 @@ export default function Gallery() {
     );
   }
 
-  if (error) {
+  // ✅ Error state
+  if (isError) {
     return (
       <div className="min-h-screen bg-gray-50">
         <Navbar />
         <Toaster position="top-center" />
         <main className="container mx-auto px-4 py-8">
           <div className="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 mb-6 rounded">
-            <p>{error}</p>
+            <p>Failed to load catalogs. Please try again.</p>
           </div>
         </main>
       </div>
     );
   }
 
-  // Filter catalogs based on search query
-  const filteredCatalogs = catalogs.filter(catalog => 
-    searchQuery === '' || 
-    (catalog.title?.toLowerCase().includes(searchQuery.toLowerCase()))
+  // ✅ Filter catalogs
+  const filteredCatalogs = catalogs.filter(
+    (catalog) =>
+      searchQuery === "" ||
+      catalog.title?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
@@ -160,13 +158,15 @@ export default function Gallery() {
       <Toaster position="bottom-right" reverseOrder={false} />
 
       <div className="max-w-7xl mx-auto space-y-8 pt-28 px-6 pb-10">
-        {/* Centered Header with Search */}
+        {/* Header + Search */}
         <div className="flex flex-col items-center space-y-6">
           <div className="text-center">
             <h1 className="text-4xl font-bold text-gray-900 mb-2">Gallery</h1>
-            <p className="text-lg text-gray-600">Browse through all your catalogs</p>
+            <p className="text-lg text-gray-600">
+              Browse through all your catalogs
+            </p>
           </div>
-          
+
           <div className="w-full max-w-2xl px-4">
             <div className="relative">
               <input
@@ -175,27 +175,51 @@ export default function Gallery() {
                   border-2 border-transparent 
                   focus:border-indigo-400 focus:ring-0 focus:ring-offset-0
                   transition-all duration-200 text-base outline-none
-                  ${searchQuery ? 'border-indigo-300' : 'border-transparent hover:border-indigo-200'}`}
+                  ${
+                    searchQuery
+                      ? "border-indigo-300"
+                      : "border-transparent hover:border-indigo-200"
+                  }`}
                 placeholder="Search by title..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => dispatch(setSearchQuery(e.target.value))}
                 style={{
-                  boxShadow: '0 4px 20px -5px rgba(99, 102, 241, 0.15)'
+                  boxShadow: "0 4px 20px -5px rgba(99, 102, 241, 0.15)",
                 }}
               />
               {searchQuery ? (
                 <button
-                  onClick={() => setSearchQuery('')}
+                  onClick={() => dispatch(setSearchQuery(""))}
                   className="absolute inset-y-0 right-0 pr-4 flex items-center text-indigo-400 hover:text-indigo-600 transition-colors"
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-5 w-5"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                      clipRule="evenodd"
+                    />
                   </svg>
                 </button>
               ) : (
                 <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-5 w-5 text-gray-400"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                    />
                   </svg>
                 </div>
               )}
@@ -203,8 +227,9 @@ export default function Gallery() {
           </div>
         </div>
 
-        {/* Catalogs Section */}
-        <div className="bg-white/70 backdrop-blur-lg border border-white/30 rounded-2xl shadow-md p-6">
+        {/* Catalogs Section (UI kept same) */}
+       
+          <div className="bg-white/70 backdrop-blur-lg border border-white/30 rounded-2xl shadow-md p-6">
           {filteredCatalogs.length === 0 ? (
             <div className="bg-white/80 backdrop-blur-lg rounded-2xl border-2 border-dashed border-indigo-300 flex flex-col items-center justify-center text-center p-16 min-h-[400px]">
               {searchQuery ? (
@@ -365,9 +390,11 @@ export default function Gallery() {
           )}
         </div>
       </div>
+
+      {/* Share Modal */}
       <ShareModal
         show={!!shareCatalog}
-        onClose={() => setShareCatalog(null)}
+        onClose={() => dispatch(closeShareModal())}
         catalogId={shareCatalog?._id}
         catalogData={shareCatalog}
       />

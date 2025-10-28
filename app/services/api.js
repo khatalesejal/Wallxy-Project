@@ -36,7 +36,27 @@ export const api = createApi({
         url:`catalog/${id}`,
         method:'DELETE',
       })
-    })
+    }),
+    createCatalog: builder.mutation({
+      query: (newCatalog) => ({
+        url: '/catalog/create',
+        method: 'POST',
+        body: newCatalog,
+      }),
+    }),
+
+    
+    updateCatalog: builder.mutation({
+      query: ({ id, data }) => ({
+        url: `/catalog/${id}`,
+        method: 'PUT',
+        body: data,
+      }),
+    }),
+    getAllCatalogs: builder.query({
+      query: () => '/catalog/all',
+}),
+
   }),
 });
 
@@ -44,5 +64,9 @@ export const {
   useRegisterUserMutation,
   useLoginUserMutation,
   useGetDashboardQuery,
+  useGetAllCatalogsQuery,
   useDeleteCatalogMutation,
+  useCreateCatalogMutation,
+  useUpdateCatalogMutation,
+  
 } = api;
