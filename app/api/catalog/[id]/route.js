@@ -165,7 +165,6 @@ export async function DELETE(req, context) {
         const publicId = parts[1]
           .replace(/^v\d+\//, "")
           .replace(/\.[^/.]+$/, "");
-          console.log("id not found",publicId);
 
         await cloudinary.uploader.destroy(publicId, { resource_type: "raw" });
         console.log(" File deleted from Cloudinary:", publicId);

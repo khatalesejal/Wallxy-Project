@@ -34,7 +34,8 @@ export default function CatalogModal({
         description: editCatalog.description || '',
         file: null, 
         preview: '',
-        fileUrl: editCatalog.fileUrl || editCatalog.file?.fileUrl || '',
+        fileUrl: editCatalog.file?.url || editCatalog.file?.fileUrl || editCatalog.fileUrl || '',
+
         existingFileName: editCatalog.file?.filename || editCatalog.filename || 'Current file'
       });
     } else {
@@ -411,7 +412,9 @@ const handleSubmit = async (e) => {
 
       const uploadData = await uploadResponse.json();
 
-      fileUrl = uploadData.file.fileUrl;
+      //fileUrl = uploadData.file.fileUrl;
+      fileUrl = uploadData.file.url || uploadData.file.fileUrl;
+
       publicId = uploadData.file.public_id; // update if new file uploaded
     }
 
